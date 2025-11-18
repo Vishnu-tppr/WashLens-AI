@@ -1,0 +1,8 @@
+shirt
+tshirt
+pants
+shorts
+track_pant
+towel
+socks
+bedsheet
