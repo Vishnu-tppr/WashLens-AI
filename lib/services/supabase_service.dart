@@ -42,6 +42,19 @@ class SupabaseService {
   /// Check if Supabase is available
   static bool get isAvailable => _isInitialized && _client != null;
 
+  /// Refresh user session to get latest data from server
+  static Future<User?> refreshSession() async {
+    if (!isAvailable) return null;
+
+    try {
+      final response = await _client!.auth.refreshSession();
+      return response.session?.user;
+    } catch (e) {
+      debugPrint('Error refreshing session: $e');
+      return _client?.auth.currentUser;
+    }
+  }
+
   // ============================================================================
   // WASH ENTRIES
   // ============================================================================
@@ -53,7 +66,7 @@ class SupabaseService {
     if (!isAvailable) return null;
     try {
       final response =
-          await _client!.from('wash_entries').insert(data).select();
+          await _client!.from('washes').insert(data).select();
       return response.first;
     } catch (e) {
       debugPrint('Error saving wash entry: $e');
@@ -68,7 +81,7 @@ class SupabaseService {
     if (!isAvailable) return [];
     try {
       final response = await _client!
-          .from('wash_entries')
+          .from('washes')
           .select()
           .eq('user_id', userId)
           .order('created_at', ascending: false);
@@ -170,6 +183,33 @@ class SupabaseService {
     }
   }
 
+  /// Update category
+  static Future<bool> updateCategory(
+    String id,
+    Map<String, dynamic> data,
+  ) async {
+    if (!isAvailable) return false;
+    try {
+      await _client!.from('categories').update(data).eq('id', id);
+      return true;
+    } catch (e) {
+      debugPrint('Error updating category: $e');
+      return false;
+    }
+  }
+
+  /// Delete category
+  static Future<bool> deleteCategory(String id) async {
+    if (!isAvailable) return false;
+    try {
+      await _client!.from('categories').delete().eq('id', id);
+      return true;
+    } catch (e) {
+      debugPrint('Error deleting category: $e');
+      return false;
+    }
+  }
+
   // ============================================================================
   // AUTHENTICATION
   // ============================================================================
@@ -202,7 +242,8 @@ class SupabaseService {
   }
 
   /// Sign up with email and password
-  static Future<User?> signUpWithPassword(String email, String password, {String? roomNumber}) async {
+  static Future<User?> signUpWithPassword(String email, String password,
+      {String? roomNumber}) async {
     if (!isAvailable) return null;
     try {
       final response = await _client!.auth.signUp(
@@ -267,15 +308,46 @@ class SupabaseService {
     String path,
     List<int> bytes,
   ) async {
-    if (!isAvailable) return null;
+    if (!isAvailable) {
+      debugPrint('Supabase not available for image upload');
+      return null;
+    }
+
     try {
       final uint8Bytes = Uint8List.fromList(bytes);
-      await _client!.storage.from(bucket).uploadBinary(path, uint8Bytes);
+
+      // Check if file exists and delete it first
+      try {
+        final exists = await _client!.storage
+            .from(bucket)
+            .list(path: path.split('/').first);
+        if (exists.any((file) => file.name == path.split('/').last)) {
+          await _client!.storage.from(bucket).remove([path]);
+          debugPrint('Removed existing file: $path');
+        }
+      } catch (checkError) {
+        debugPrint('Could not check for existing file: $checkError');
+      }
+
+      // Upload with upsert option
+      final uploadResponse = await _client!.storage.from(bucket).uploadBinary(
+            path,
+            uint8Bytes,
+            fileOptions: const FileOptions(
+              cacheControl: '3600',
+              upsert: true,
+            ),
+          );
+
+      debugPrint('Upload response: $uploadResponse');
+
       final url = _client!.storage.from(bucket).getPublicUrl(path);
+      debugPrint('Generated public URL: $url');
       return url;
     } catch (e) {
       debugPrint('Error uploading image: $e');
-      return null;
+      debugPrint('Stack trace: ${StackTrace.current}');
+      rethrow; // Rethrow to handle error in calling code
     }
   }
 

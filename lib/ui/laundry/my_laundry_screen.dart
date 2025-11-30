@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 import '../theme/app_theme.dart';
 import '../../providers/user_provider.dart';
 import '../../services/supabase_service.dart';
+import '../../services/export_service.dart';
+import 'mark_returned_screen.dart';
 
 /// My Laundry Screen - Shows list of all laundry entries with search and filters
 class MyLaundryScreen extends StatefulWidget {
@@ -28,7 +30,8 @@ class _MyLaundryScreenState extends State<MyLaundryScreen> {
   Future<void> _loadWashEntries() async {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     if (userProvider.currentUser != null) {
-      final entries = await SupabaseService.getWashEntries(userProvider.currentUser!.id);
+      final entries =
+          await SupabaseService.getWashEntries(userProvider.currentUser!.id);
       if (mounted) {
         setState(() {
           _washEntries = entries;
@@ -91,7 +94,8 @@ class _MyLaundryScreenState extends State<MyLaundryScreen> {
                   color: AppTheme.textTertiary,
                   fontSize: screenWidth * 0.035,
                 ),
-                prefixIcon: const Icon(Icons.search, color: AppTheme.textTertiary),
+                prefixIcon:
+                    const Icon(Icons.search, color: AppTheme.textTertiary),
                 filled: true,
                 fillColor: Colors.white,
                 border: OutlineInputBorder(
@@ -159,7 +163,8 @@ class _MyLaundryScreenState extends State<MyLaundryScreen> {
                     : RefreshIndicator(
                         onRefresh: _loadWashEntries,
                         child: ListView.builder(
-                          padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
+                          padding: EdgeInsets.symmetric(
+                              horizontal: screenWidth * 0.04),
                           itemCount: _groupedEntries().length,
                           itemBuilder: (context, index) {
                             final group = _groupedEntries()[index];
@@ -170,13 +175,19 @@ class _MyLaundryScreenState extends State<MyLaundryScreen> {
                                 ...List.generate(group['entries'].length, (i) {
                                   final entry = group['entries'][i];
                                   return Padding(
-                                    padding: EdgeInsets.only(bottom: screenHeight * 0.015),
+                                    padding: EdgeInsets.only(
+                                        bottom: screenHeight * 0.015),
                                     child: _buildLaundryCard(
-                                      entry['dhobi_name'] ?? 'Unknown Dhobi',
-                                      '${entry['total_items'] ?? 0} Items',
-                                      _formatDate(entry['created_at']),
-                                      entry['status'] ?? 'Pending',
-                                      hasIssue: entry['has_missing_items'] ?? false,
+                                      washId: entry['id'] ?? '',
+                                      dhobiName: entry['dhobi_name'] ??
+                                          'Unknown Dhobi',
+                                      itemCount:
+                                          '${entry['total_items'] ?? 0} Items',
+                                      dateTime:
+                                          _formatDate(entry['created_at']),
+                                      status: entry['status'] ?? 'Pending',
+                                      hasIssue:
+                                          entry['has_missing_items'] ?? false,
                                       screenWidth: screenWidth,
                                       screenHeight: screenHeight,
                                     ),
@@ -222,7 +233,8 @@ class _MyLaundryScreenState extends State<MyLaundryScreen> {
     }
     if (older.isNotEmpty) {
       final monthYear = older.isNotEmpty
-          ? DateFormat('MMMM yyyy').format(DateTime.parse(older.first['created_at']))
+          ? DateFormat('MMMM yyyy')
+              .format(DateTime.parse(older.first['created_at']))
           : 'Older';
       groups.add({'title': monthYear, 'entries': older});
     }
@@ -250,7 +262,9 @@ class _MyLaundryScreenState extends State<MyLaundryScreen> {
           color: isSelected ? AppTheme.primary : Colors.white,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? AppTheme.primary : AppTheme.textTertiary.withOpacity(0.3),
+            color: isSelected
+                ? AppTheme.primary
+                : AppTheme.textTertiary.withOpacity(0.3),
           ),
         ),
         child: Row(
@@ -290,11 +304,12 @@ class _MyLaundryScreenState extends State<MyLaundryScreen> {
     );
   }
 
-  Widget _buildLaundryCard(
-    String dhobiName,
-    String itemCount,
-    String dateTime,
-    String status, {
+  Widget _buildLaundryCard({
+    required String washId,
+    required String dhobiName,
+    required String itemCount,
+    required String dateTime,
+    required String status,
     required bool hasIssue,
     required double screenWidth,
     required double screenHeight,
@@ -427,7 +442,9 @@ class _MyLaundryScreenState extends State<MyLaundryScreen> {
                           status,
                           style: TextStyle(
                             fontSize: screenWidth * 0.028,
-                            color: status == 'Pending' ? Colors.blue : AppTheme.accent,
+                            color: status == 'Pending'
+                                ? Colors.blue
+                                : AppTheme.accent,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -435,11 +452,137 @@ class _MyLaundryScreenState extends State<MyLaundryScreen> {
                     ],
                   ),
                 ),
+                SizedBox(width: screenWidth * 0.02),
+                // Action Buttons
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // PDF Export Button
+                    IconButton(
+                      icon: const Icon(Icons.picture_as_pdf),
+                      color: AppTheme.primary,
+                      onPressed: () => _handleExportPdf(washId, dhobiName),
+                      tooltip: 'Export PDF',
+                    ),
+                    // Mark Returned Button (only for Pending status)
+                    if (status == 'Pending')
+                      IconButton(
+                        icon: const Icon(Icons.assignment_return),
+                        color: AppTheme.accent,
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  MarkReturnedScreen(washId: washId),
+                            ),
+                          );
+                        },
+                        tooltip: 'Mark Returned',
+                      ),
+                  ],
+                ),
               ],
             ),
           ),
         ),
       ),
     );
+  }
+
+  Future<void> _handleExportPdf(String washId, String dhobiName) async {
+    if (washId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.error_outline, color: Colors.white),
+              SizedBox(width: 12),
+              Text('Invalid wash entry'),
+            ],
+          ),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    // Show loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Center(
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: const Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text(
+                'Generating PDF...',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    try {
+      final exportService = ExportService();
+      final pdfFile = await exportService.generatePdfForWash(washId);
+
+      if (mounted) {
+        Navigator.of(context).pop(); // Close loading
+
+        // Share the PDF
+        await exportService.sharePdf(pdfFile);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.white),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text('PDF generated for $dhobiName'),
+                  ),
+                ],
+              ),
+              backgroundColor: AppTheme.accent,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.of(context).pop(); // Close loading
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(child: Text('Failed to generate PDF: $e')),
+              ],
+            ),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    }
   }
 }

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'package:provider/provider.dart';
 import '../auth/login_screen.dart';
+import '../home/home_screen.dart';
 import '../theme/app_theme.dart';
+import '../../providers/user_provider.dart';
 
 /// Animated splash screen with GIF animation
 class SplashScreen extends StatefulWidget {
@@ -36,12 +39,36 @@ class _SplashScreenState extends State<SplashScreen>
     // Start rotation animation
     _rotationController.repeat();
 
-    // Navigate to login screen after 3 seconds
-    Timer(const Duration(milliseconds: 3000), () {
+    // Check for existing login and navigate accordingly
+    _checkLoginAndNavigate();
+  }
+
+  Future<void> _checkLoginAndNavigate() async {
+    if (!mounted) return;
+
+    // Get user provider
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    
+    // Re-initialize to ensure session is checked
+    await userProvider.initialize();
+    
+    // Wait for splash animation
+    await Future.delayed(const Duration(milliseconds: 3000));
+
+    if (!mounted) return;
+    
+    // Check if user is already logged in after initialization
+    if (userProvider.isLoggedIn) {
+      debugPrint('✅ Splash: User is logged in, navigating to home');
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const HomeScreen()),
+      );
+    } else {
+      debugPrint('⚠️ Splash: No active session, navigating to login');
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const LoginScreen()),
       );
-    });
+    }
   }
 
   @override

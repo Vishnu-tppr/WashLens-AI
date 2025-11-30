@@ -212,9 +212,9 @@ class _NewWashScreenState extends State<NewWashScreen> {
     } catch (e) {
       print('Error saving wash entry: $e');
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
       }
     } finally {
       if (mounted) {
@@ -244,180 +244,8 @@ class _NewWashScreenState extends State<NewWashScreen> {
             ),
         ],
       ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            // Dhobi selection
-            const Text(
-              'Dhobi / Laundry Service',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 8),
-            if (_dhobis.isNotEmpty) ...[
-              Wrap(
-                spacing: 8,
-                children: _dhobis.map((dhobi) {
-                  final dhobiId = dhobi['id'] as String?;
-                  final dhobiName = dhobi['name'] as String? ?? 'Unknown';
-                  final isSelected = _selectedDhobiId == dhobiId;
-                  return ChoiceChip(
-                    label: Text(dhobiName),
-                    selected: isSelected,
-                    onSelected: (selected) {
-                      setState(() {
-                        _selectedDhobiId = selected ? dhobiId : null;
-                        if (selected) {
-                          _dhobiController.clear();
-                        }
-                      });
-                    },
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 8),
-              const Text('or', style: TextStyle(color: Colors.grey)),
-              const SizedBox(height: 8),
-            ],
-            TextFormField(
-              controller: _dhobiController,
-              decoration: const InputDecoration(
-                hintText: 'e.g., Raju Bhaiya',
-                prefixIcon: Icon(Icons.person),
-              ),
-              enabled: _selectedDhobiId == null,
-              validator: (value) {
-                if (_selectedDhobiId == null &&
-                    (value == null || value.isEmpty)) {
-                  return 'Please enter dhobi name or select from chips';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 24),
-
-            // Categories
-            const Text(
-              'What are you sending?',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              height: 100,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: _categories.length,
-                itemBuilder: (context, index) {
-                  final category = _categories[index];
-                  return _buildCategoryChip(category);
-                },
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Notes
-            const Text(
-              'Notes (Optional)',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 8),
-            TextFormField(
-              controller: _notesController,
-              decoration: const InputDecoration(
-                hintText: 'e.g., Please use gentle wash for the blue shirt',
-              ),
-              maxLines: 3,
-            ),
-            const SizedBox(height: 24),
-
-            // Basket
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Your Laundry Basket ($totalItems Items)',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      if (_capturedImages.isNotEmpty)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.green,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                Icons.check,
-                                color: Colors.white,
-                                size: 16,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                '${_capturedImages.length} photo${_capturedImages.length > 1 ? "s" : ""}',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  if (_basketCounts.isEmpty)
-                    const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(20),
-                        child: Text(
-                          'No items added yet',
-                          style: TextStyle(color: Colors.grey),
-                        ),
-                      ),
-                    )
-                  else
-                    ..._basketCounts.entries.map((entry) {
-                      final category = _categories.firstWhere(
-                        (cat) => cat['id'] == entry.key,
-                        orElse: () => {
-                          'name': entry.key,
-                          'icon': Icons.checkroom,
-                        },
-                      );
-                      return _buildBasketItem(
-                        category['name'] as String,
-                        entry.value,
-                        category['icon'] as IconData,
-                        entry.key,
-                      );
-                    }),
-                ],
-              ),
-            ),
-            const SizedBox(height: 80),
-          ],
-        ),
-      ),
-      floatingActionButton: Column(
+      body: SafeArea(
+        floatingActionButton: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           FloatingActionButton(
@@ -433,6 +261,179 @@ class _NewWashScreenState extends State<NewWashScreen> {
             label: const Text('Save Entry'),
           ),
         ],
+      ),
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              // Dhobi selection
+              const Text(
+                'Dhobi / Laundry Service',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 8),
+              if (_dhobis.isNotEmpty) ...[
+                Wrap(
+                  spacing: 8,
+                  children: _dhobis.map((dhobi) {
+                    final dhobiId = dhobi['id'] as String?;
+                    final dhobiName = dhobi['name'] as String? ?? 'Unknown';
+                    final isSelected = _selectedDhobiId == dhobiId;
+                    return ChoiceChip(
+                      label: Text(dhobiName),
+                      selected: isSelected,
+                      onSelected: (selected) {
+                        setState(() {
+                          _selectedDhobiId = selected ? dhobiId : null;
+                          if (selected) {
+                            _dhobiController.clear();
+                          }
+                        });
+                      },
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 8),
+                const Text('or', style: TextStyle(color: Colors.grey)),
+                const SizedBox(height: 8),
+              ],
+              TextFormField(
+                controller: _dhobiController,
+                decoration: const InputDecoration(
+                  hintText: 'e.g., Raju Bhaiya',
+                  prefixIcon: Icon(Icons.person),
+                ),
+                enabled: _selectedDhobiId == null,
+                validator: (value) {
+                  if (_selectedDhobiId == null &&
+                      (value == null || value.isEmpty)) {
+                    return 'Please enter dhobi name or select from chips';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 24),
+
+              // Categories
+              const Text(
+                'What are you sending?',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                height: 100,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _categories.length,
+                  itemBuilder: (context, index) {
+                    final category = _categories[index];
+                    return _buildCategoryChip(category);
+                  },
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Notes
+              const Text(
+                'Notes (Optional)',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: _notesController,
+                decoration: const InputDecoration(
+                  hintText: 'e.g., Please use gentle wash for the blue shirt',
+                ),
+                maxLines: 3,
+              ),
+              const SizedBox(height: 24),
+
+              // Basket
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Your Laundry Basket ($totalItems Items)',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        if (_capturedImages.isNotEmpty)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.green,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.check,
+                                  color: Colors.white,
+                                  size: 16,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '${_capturedImages.length} photo${_capturedImages.length > 1 ? "s" : ""}',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    if (_basketCounts.isEmpty)
+                      const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(20),
+                          child: Text(
+                            'No items added yet',
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        ),
+                      )
+                    else
+                      ..._basketCounts.entries.map((entry) {
+                        final category = _categories.firstWhere(
+                          (cat) => cat['id'] == entry.key,
+                          orElse: () => {
+                            'name': entry.key,
+                            'icon': Icons.checkroom,
+                          },
+                        );
+                        return _buildBasketItem(
+                          category['name'] as String,
+                          entry.value,
+                          category['icon'] as IconData,
+                          entry.key,
+                        );
+                      }),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 80),
+          ],
+        ),
       ),
     );
   }

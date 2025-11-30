@@ -1,0 +1,29 @@
+{
+  "name": "washlens-fcm-test-server",
+  "version": "1.0.0",
+  "description": "Firebase Cloud Messaging test server for WashLens AI",
+  "main": "fcm-test-server.js",
+  "scripts": {
+    "start": "node fcm-test-server.js",
+    "dev": "nodemon fcm-test-server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.0.0",
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.0"
+  },
+  "keywords": [
+    "firebase",
+    "fcm",
+    "notifications",
+    "washlens",
+    "test"
+  ],
+  "author": "WashLens AI Team",
+  "license": "MIT"
+}

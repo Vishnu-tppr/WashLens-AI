@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:camera/camera.dart';
 import 'package:image_picker/image_picker.dart';
@@ -40,16 +41,35 @@ class _ScanScreenState extends State<ScanScreen> {
 
       _controller = CameraController(
         _cameras[0],
-        ResolutionPreset.high,
+        ResolutionPreset.medium, // Better for portrait photography on mobile
         enableAudio: false,
+        imageFormatGroup: ImageFormatGroup.jpeg, // Explicit format for compatibility
       );
 
       await _controller!.initialize();
+
+      // Lock orientation to portrait for proper aspect ratio
+      await _controller!.lockCaptureOrientation(DeviceOrientation.portraitUp);
+
       if (mounted) {
         setState(() => _isInitialized = true);
       }
     } catch (e) {
       print('Error initializing camera: $e');
+      // Fallback to basic initialization if orientation locking fails
+      try {
+        _controller = CameraController(
+          _cameras[0],
+          ResolutionPreset.medium,
+          enableAudio: false,
+        );
+        await _controller!.initialize();
+        if (mounted) {
+          setState(() => _isInitialized = true);
+        }
+      } catch (e2) {
+        print('Error with fallback camera initialization: $e2');
+      }
     }
   }
 
@@ -95,7 +115,7 @@ class _ScanScreenState extends State<ScanScreen> {
           meanConfidence: result.items.isEmpty
               ? 0.0
               : result.items.map((e) => e.confidence).reduce((a, b) => a + b) /
-                    result.items.length,
+                  result.items.length,
         );
       });
 
@@ -165,7 +185,7 @@ class _ScanScreenState extends State<ScanScreen> {
           meanConfidence: allDetections.isEmpty
               ? 0.0
               : allDetections.map((e) => e.score).reduce((a, b) => a + b) /
-                    allDetections.length,
+                  allDetections.length,
         );
       });
 
@@ -235,8 +255,8 @@ class _ScanScreenState extends State<ScanScreen> {
                     _currentDetection!.meanConfidence > 0.7
                         ? Colors.green
                         : _currentDetection!.meanConfidence > 0.5
-                        ? Colors.orange
-                        : Colors.red,
+                            ? Colors.orange
+                            : Colors.red,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -373,159 +393,180 @@ class _ScanScreenState extends State<ScanScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: Stack(
-        children: [
-          // Camera preview
-          if (_isInitialized && _controller != null)
-            Positioned.fill(child: CameraPreview(_controller!))
-          else
-            const Center(child: CircularProgressIndicator(color: Colors.white)),
-
-          // Top bar
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  IconButton(
-                    icon: const Icon(
-                      Icons.close,
-                      color: Colors.white,
-                      size: 32,
-                    ),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                  const Text(
-                    'Scan Your Laundry',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(width: 48),
-                ],
+      body: SizedBox.expand(
+        child: Stack(
+          children: [
+            // Camera preview - Optimized for portrait photography
+            if (_isInitialized && _controller != null)
+              Positioned.fill(
+                child: AspectRatio(
+                  aspectRatio: _controller!.value.aspectRatio,
+                  child: CameraPreview(_controller!),
+                ),
+              )
+            else
+              const Center(
+                child: CircularProgressIndicator(color: Colors.white),
               ),
-            ),
-          ),
 
-          // Bottom controls
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: Container(
-              padding: const EdgeInsets.all(32),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.bottomCenter,
-                  end: Alignment.topCenter,
-                  colors: [Colors.black.withOpacity(0.8), Colors.transparent],
+            // Top bar
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    IconButton(
+                      icon: const Icon(
+                        Icons.close,
+                        color: Colors.white,
+                        size: 32,
+                      ),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                    Text(
+                      widget.role == 'returned'
+                          ? 'Scan Returned Items'
+                          : 'Scan Your Laundry',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(width: 48),
+                  ],
                 ),
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Info card
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    margin: const EdgeInsets.only(bottom: 24),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.blue.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
+            ),
+
+            // Bottom controls
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: Container(
+                padding: const EdgeInsets.all(32),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                    colors: [Colors.black.withOpacity(0.8), Colors.transparent],
+                  ),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Info card
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      margin: const EdgeInsets.only(bottom: 24),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: widget.role == 'returned'
+                                  ? Colors.green.withOpacity(0.1)
+                                  : Colors.blue.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(
+                              widget.role == 'returned'
+                                  ? Icons.compare_arrows
+                                  : Icons.info_outline,
+                              color: widget.role == 'returned'
+                                  ? Colors.green
+                                  : Colors.blue,
+                            ),
                           ),
-                          child: const Icon(
-                            Icons.info_outline,
-                            color: Colors.blue,
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  widget.role == 'returned'
+                                      ? 'Comparison Mode'
+                                      : 'Ready to Scan',
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  widget.role == 'returned'
+                                      ? 'AI will compare returned items with original wash to detect missing items.'
+                                      : 'Point your camera at the laundry pile and tap the capture button to begin.',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Control buttons
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        // Gallery button
+                        _buildControlButton(
+                          icon: Icons.photo_library,
+                          onPressed: _isProcessing ? null : _pickFromGallery,
+                        ),
+
+                        // Capture button
+                        GestureDetector(
+                          onTap: _isProcessing ? null : _captureImage,
+                          child: Container(
+                            width: 80,
+                            height: 80,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white,
+                              border: Border.all(color: Colors.blue, width: 4),
+                            ),
+                            child: _isProcessing
+                                ? const Padding(
+                                    padding: EdgeInsets.all(20),
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 3,
+                                    ),
+                                  )
+                                : const Icon(
+                                    Icons.camera_alt,
+                                    size: 36,
+                                    color: Colors.blue,
+                                  ),
                           ),
                         ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Ready to Scan',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Point your camera at the laundry pile and tap the capture button to begin.',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: Colors.grey[600],
-                                ),
-                              ),
-                            ],
-                          ),
+
+                        // Multiple images indicator
+                        _buildControlButton(
+                          icon: Icons.collections,
+                          badge: _capturedImages.isNotEmpty
+                              ? _capturedImages.length.toString()
+                              : null,
+                          onPressed: () {},
                         ),
                       ],
                     ),
-                  ),
-
-                  // Control buttons
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      // Gallery button
-                      _buildControlButton(
-                        icon: Icons.photo_library,
-                        onPressed: _isProcessing ? null : _pickFromGallery,
-                      ),
-
-                      // Capture button
-                      GestureDetector(
-                        onTap: _isProcessing ? null : _captureImage,
-                        child: Container(
-                          width: 80,
-                          height: 80,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white,
-                            border: Border.all(color: Colors.blue, width: 4),
-                          ),
-                          child: _isProcessing
-                              ? const Padding(
-                                  padding: EdgeInsets.all(20),
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 3,
-                                  ),
-                                )
-                              : const Icon(
-                                  Icons.camera_alt,
-                                  size: 36,
-                                  color: Colors.blue,
-                                ),
-                        ),
-                      ),
-
-                      // Multiple images indicator
-                      _buildControlButton(
-                        icon: Icons.collections,
-                        badge: _capturedImages.isNotEmpty
-                            ? _capturedImages.length.toString()
-                            : null,
-                        onPressed: () {},
-                      ),
-                    ],
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

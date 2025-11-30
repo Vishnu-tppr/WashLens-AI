@@ -92,7 +92,8 @@ class _SignupScreenState extends State<SignupScreen> {
       // 1. Try Supabase first
       if (!SupabaseService.isAvailable) {
         setState(() {
-          _errorMessage = 'Backend service is not available. Please check your configuration.';
+          _errorMessage =
+              'Backend service is not available. Please check your configuration.';
           _isLoading = false;
         });
         return;
@@ -104,32 +105,32 @@ class _SignupScreenState extends State<SignupScreen> {
         roomNumber: roomNumber.isNotEmpty ? roomNumber : null,
       );
 
-        if (user != null && mounted) {
-          final userProvider = Provider.of<UserProvider>(context, listen: false);
-          userProvider.setCurrentSupabaseUser(user);
+      if (user != null && mounted) {
+        final userProvider = Provider.of<UserProvider>(context, listen: false);
+        await userProvider.setCurrentSupabaseUser(user);
 
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Account created successfully! Please verify your email.'),
-              backgroundColor: AppTheme.accent,
-            ),
-          );
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content:
+                Text('Account created successfully! Please verify your email.'),
+            backgroundColor: AppTheme.accent,
+          ),
+        );
 
-          // Wait for user settings to load before navigation
-          await Future.delayed(const Duration(milliseconds: 200));
-
-          if (userProvider.isLoggedIn) {
-            _navigateToHome();
-          } else {
-            setState(() {
-              _errorMessage = 'Account created but failed to load user data. Please try logging in.';
-            });
-          }
-          return;
+        if (userProvider.isLoggedIn) {
+          _navigateToHome();
+        } else {
+          setState(() {
+            _errorMessage =
+                'Account created but failed to load user data. Please try logging in.';
+          });
         }
+        return;
+      }
 
       setState(() {
-        _errorMessage = 'Sign up failed. Please check your details and try again.';
+        _errorMessage =
+            'Sign up failed. Please check your details and try again.';
       });
     } catch (e) {
       debugPrint('Sign-up error: $e');
@@ -165,7 +166,7 @@ class _SignupScreenState extends State<SignupScreen> {
       final user = await firebaseService.signInWithGoogle();
       if (user != null && mounted) {
         final userProvider = Provider.of<UserProvider>(context, listen: false);
-        userProvider.setCurrentFirebaseUser(user);
+        await userProvider.setCurrentFirebaseUser(user);
         _navigateToHome();
         return;
       } else {
@@ -174,16 +175,21 @@ class _SignupScreenState extends State<SignupScreen> {
           _isLoading = false;
         });
       }
-
     } catch (e) {
       debugPrint('Google Sign-In error: $e');
       setState(() {
-        if (e.toString().contains('CANCELLED') || e.toString().contains('cancelled') || e.toString().contains('user-cancelled')) {
+        if (e.toString().contains('CANCELLED') ||
+            e.toString().contains('cancelled') ||
+            e.toString().contains('user-cancelled')) {
           _errorMessage = 'Sign-in was cancelled';
-        } else if (e.toString().contains('network') || e.toString().contains('NETWORK')) {
-          _errorMessage = 'Network error. Please check your internet connection.';
-        } else if (e.toString().contains('google-sign-in-failed') || e.toString().contains('PlatformException')) {
-          _errorMessage = 'Google Sign-In is not properly configured. Please contact support or use email/password login.';
+        } else if (e.toString().contains('network') ||
+            e.toString().contains('NETWORK')) {
+          _errorMessage =
+              'Network error. Please check your internet connection.';
+        } else if (e.toString().contains('google-sign-in-failed') ||
+            e.toString().contains('PlatformException')) {
+          _errorMessage =
+              'Google Sign-In is not properly configured. Please contact support or use email/password login.';
         } else {
           _errorMessage = 'Google Sign-In failed: ${_parseError(e.toString())}';
         }
@@ -197,7 +203,8 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   String _parseError(String error) {
-    if (error.contains('email-already-in-use') || error.contains('User already registered')) {
+    if (error.contains('email-already-in-use') ||
+        error.contains('User already registered')) {
       return 'An account with this email already exists. Try logging in.';
     } else if (error.contains('invalid-email')) {
       return 'Invalid email address format.';
@@ -205,7 +212,8 @@ class _SignupScreenState extends State<SignupScreen> {
       return 'Password is too weak. Use at least 6 characters.';
     } else if (error.contains('network') || error.contains('Network error')) {
       return 'Network error. Please check your connection.';
-    } else if (error.contains('PlatformException') && error.contains('sign_in_failed')) {
+    } else if (error.contains('PlatformException') &&
+        error.contains('sign_in_failed')) {
       return 'Google Sign-In failed due to configuration error.';
     }
     return 'Sign up failed. Please try again later.';
@@ -375,11 +383,14 @@ class _SignupScreenState extends State<SignupScreen> {
                 obscureText: _obscurePassword,
                 suffixIcon: IconButton(
                   icon: Icon(
-                    _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                    _obscurePassword
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined,
                     color: AppTheme.textSecondary,
                     size: screenWidth * 0.05,
                   ),
-                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                  onPressed: () =>
+                      setState(() => _obscurePassword = !_obscurePassword),
                 ),
                 screenWidth: screenWidth,
                 screenHeight: screenHeight,
@@ -397,11 +408,14 @@ class _SignupScreenState extends State<SignupScreen> {
                 suffixIcon: IconButton(
                   // FIX: Consistent visibility icon toggle logic
                   icon: Icon(
-                    _obscureConfirmPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                    _obscureConfirmPassword
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined,
                     color: AppTheme.textSecondary,
                     size: screenWidth * 0.055,
                   ),
-                  onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+                  onPressed: () => setState(
+                      () => _obscureConfirmPassword = !_obscureConfirmPassword),
                 ),
                 screenWidth: screenWidth,
                 screenHeight: screenHeight,
@@ -420,7 +434,8 @@ class _SignupScreenState extends State<SignupScreen> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.error_outline, color: Colors.red, size: 20),
+                      const Icon(Icons.error_outline,
+                          color: Colors.red, size: 20),
                       SizedBox(width: screenWidth * 0.02),
                       Expanded(
                         child: Text(
@@ -444,7 +459,8 @@ class _SignupScreenState extends State<SignupScreen> {
                   onPressed: _isLoading ? null : _handleSignUp,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.primary,
-                    padding: EdgeInsets.symmetric(vertical: screenHeight * 0.016),
+                    padding:
+                        EdgeInsets.symmetric(vertical: screenHeight * 0.016),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(screenWidth * 0.08),
                     ),
@@ -456,7 +472,8 @@ class _SignupScreenState extends State<SignupScreen> {
                           width: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
                           ),
                         )
                       : Text(
@@ -475,9 +492,11 @@ class _SignupScreenState extends State<SignupScreen> {
               // Divider with "or"
               Row(
                 children: [
-                  const Expanded(child: Divider(color: Color(0xFFE2E8F0), thickness: 1)),
+                  const Expanded(
+                      child: Divider(color: Color(0xFFE2E8F0), thickness: 1)),
                   Padding(
-                    padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.03),
+                    padding:
+                        EdgeInsets.symmetric(horizontal: screenWidth * 0.03),
                     child: Text(
                       'or',
                       style: TextStyle(
@@ -486,7 +505,8 @@ class _SignupScreenState extends State<SignupScreen> {
                       ),
                     ),
                   ),
-                  const Expanded(child: Divider(color: Color(0xFFE2E8F0), thickness: 1)),
+                  const Expanded(
+                      child: Divider(color: Color(0xFFE2E8F0), thickness: 1)),
                 ],
               ),
 
@@ -519,8 +539,10 @@ class _SignupScreenState extends State<SignupScreen> {
                     ),
                   ),
                   style: OutlinedButton.styleFrom(
-                    padding: EdgeInsets.symmetric(vertical: screenHeight * 0.014),
-                    side: const BorderSide(color: Color(0xFFE2E8F0), width: 1.5),
+                    padding:
+                        EdgeInsets.symmetric(vertical: screenHeight * 0.014),
+                    side:
+                        const BorderSide(color: Color(0xFFE2E8F0), width: 1.5),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(screenWidth * 0.08),
                     ),
@@ -564,7 +586,9 @@ class _SignupScreenState extends State<SignupScreen> {
                   ),
                 ],
               ),
-              SizedBox(height: screenHeight * 0.05), // Add extra space at the bottom for larger screens
+              SizedBox(
+                  height: screenHeight *
+                      0.05), // Add extra space at the bottom for larger screens
             ],
           ),
         ),

@@ -14,14 +14,45 @@ class _WashEntrySummaryScreenState extends State<WashEntrySummaryScreen> {
   String _selectedDhobi = 'Sunrise Laundry Services';
 
   final List<Map<String, dynamic>> _detectedItems = [
-    {'name': 'Shirts', 'count': 4, 'icon': Icons.checkroom, 'color': const Color(0xFF3B82F6)},
-    {'name': 'T-shirts', 'count': 6, 'icon': Icons.checkroom_outlined, 'color': const Color(0xFF10B981)},
-    {'name': 'Pants', 'count': 3, 'icon': Icons.person, 'color': const Color(0xFF8B5CF6)},
-    {'name': 'Towels', 'count': 2, 'icon': Icons.dry_cleaning, 'color': const Color(0xFFF59E0B)},
-    {'name': 'Socks', 'count': 5, 'icon': Icons.accessibility, 'color': const Color(0xFFF97316)},
+    {
+      'name': 'Shirts',
+      'count': 4,
+      'icon': Icons.checkroom,
+      'color': const Color(0xFF3B82F6)
+    },
+    {
+      'name': 'T-shirts',
+      'count': 6,
+      'icon': Icons.checkroom_outlined,
+      'color': const Color(0xFF10B981)
+    },
+    {
+      'name': 'Pants',
+      'count': 3,
+      'icon': Icons.person,
+      'color': const Color(0xFF8B5CF6)
+    },
+    {
+      'name': 'Towels',
+      'count': 2,
+      'icon': Icons.dry_cleaning,
+      'color': const Color(0xFFF59E0B)
+    },
+    {
+      'name': 'Socks',
+      'count': 5,
+      'icon': Icons.accessibility,
+      'color': const Color(0xFFF97316)
+    },
   ];
 
-  final List<String> _detectedColors = ['Blue', 'White', 'Striped', 'Checked', 'Cotton'];
+  final List<String> _detectedColors = [
+    'Blue',
+    'White',
+    'Striped',
+    'Checked',
+    'Cotton'
+  ];
 
   @override
   void dispose() {
@@ -68,7 +99,8 @@ class _WashEntrySummaryScreenState extends State<WashEntrySummaryScreen> {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.info_outline, color: Colors.blue, size: 20),
+                    const Icon(Icons.info_outline,
+                        color: Colors.blue, size: 20),
                     SizedBox(width: screenWidth * 0.03),
                     Expanded(
                       child: Text(
@@ -124,7 +156,8 @@ class _WashEntrySummaryScreenState extends State<WashEntrySummaryScreen> {
                     decoration: BoxDecoration(
                       color: AppTheme.accent.withOpacity(0.15),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: AppTheme.accent.withOpacity(0.3)),
+                      border:
+                          Border.all(color: AppTheme.accent.withOpacity(0.3)),
                     ),
                     child: Text(
                       color,
@@ -158,7 +191,8 @@ class _WashEntrySummaryScreenState extends State<WashEntrySummaryScreen> {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.calendar_today, color: AppTheme.textSecondary, size: 20),
+                    const Icon(Icons.calendar_today,
+                        color: AppTheme.textSecondary, size: 20),
                     SizedBox(width: screenWidth * 0.03),
                     Text(
                       'Oct 26, 2023, 10:30 AM',
@@ -196,7 +230,8 @@ class _WashEntrySummaryScreenState extends State<WashEntrySummaryScreen> {
                   child: DropdownButton<String>(
                     value: _selectedDhobi,
                     isExpanded: true,
-                    icon: const Icon(Icons.keyboard_arrow_down, color: AppTheme.textSecondary),
+                    icon: const Icon(Icons.keyboard_arrow_down,
+                        color: AppTheme.textSecondary),
                     items: [
                       'Sunrise Laundry Services',
                       'Raju Dhobi',
@@ -239,7 +274,8 @@ class _WashEntrySummaryScreenState extends State<WashEntrySummaryScreen> {
                 controller: _notesController,
                 maxLines: 4,
                 decoration: InputDecoration(
-                  hintText: 'e.g., Use gentle detergent for the blue striped shirt...',
+                  hintText:
+                      'e.g., Use gentle detergent for the blue striped shirt...',
                   hintStyle: TextStyle(
                     color: AppTheme.textTertiary,
                     fontSize: screenWidth * 0.035,
@@ -267,7 +303,8 @@ class _WashEntrySummaryScreenState extends State<WashEntrySummaryScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.primary,
                     foregroundColor: Colors.white,
-                    padding: EdgeInsets.symmetric(vertical: screenHeight * 0.02),
+                    padding:
+                        EdgeInsets.symmetric(vertical: screenHeight * 0.02),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -389,7 +426,8 @@ class _WashEntrySummaryScreenState extends State<WashEntrySummaryScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Text(
                       newCount.toString(),
-                      style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                          fontSize: 24, fontWeight: FontWeight.bold),
                     ),
                   ),
                   IconButton(
@@ -411,7 +449,8 @@ class _WashEntrySummaryScreenState extends State<WashEntrySummaryScreen> {
               onPressed: () {
                 // Update count
                 setState(() {
-                  final index = _detectedItems.indexWhere((item) => item['name'] == itemName);
+                  final index = _detectedItems
+                      .indexWhere((item) => item['name'] == itemName);
                   if (index != -1) {
                     _detectedItems[index]['count'] = newCount;
                   }

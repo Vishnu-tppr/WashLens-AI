@@ -13,7 +13,7 @@ class AnalyticsScreen extends StatelessWidget {
     final horizontalPadding = screenWidth * 0.04;
     final verticalPadding = screenHeight * 0.015;
     final cardSpacing = screenHeight * 0.012;
-    
+
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(
@@ -103,9 +103,9 @@ class AnalyticsScreen extends StatelessWidget {
                   Text(
                     'Category History',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontSize: screenWidth * 0.045,
-                      fontWeight: FontWeight.w600,
-                    ),
+                          fontSize: screenWidth * 0.045,
+                          fontWeight: FontWeight.w600,
+                        ),
                   ),
                   SizedBox(height: screenHeight * 0.004),
                   Row(
@@ -113,10 +113,11 @@ class AnalyticsScreen extends StatelessWidget {
                     children: [
                       Text(
                         '42 items',
-                        style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                          fontSize: screenWidth * 0.065,
-                          fontWeight: FontWeight.w700,
-                        ),
+                        style:
+                            Theme.of(context).textTheme.headlineLarge?.copyWith(
+                                  fontSize: screenWidth * 0.065,
+                                  fontWeight: FontWeight.w700,
+                                ),
                       ),
                       SizedBox(width: screenWidth * 0.02),
                       Padding(
@@ -163,9 +164,9 @@ class AnalyticsScreen extends StatelessWidget {
                     Text(
                       'Return Delay Pattern',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontSize: screenWidth * 0.045,
-                        fontWeight: FontWeight.w600,
-                      ),
+                            fontSize: screenWidth * 0.045,
+                            fontWeight: FontWeight.w600,
+                          ),
                     ),
                     SizedBox(height: screenHeight * 0.012),
                     Expanded(
@@ -330,7 +331,8 @@ class AnalyticsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildDelayBar(String day, double value, double screenWidth, double screenHeight) {
+  Widget _buildDelayBar(
+      String day, double value, double screenWidth, double screenHeight) {
     return Row(
       children: [
         SizedBox(

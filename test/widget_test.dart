@@ -7,11 +7,24 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:washlens_ai/main.dart';
+import 'package:washlens_ai/services/notification_service_enhanced.dart';
+import 'package:washlens_ai/ml/detector.dart';
+import 'package:washlens_ai/providers/user_provider.dart';
 
 void main() {
-  testWidgets('WashLensApp should build without errors', (WidgetTester tester) async {
+  testWidgets('WashLensApp should build without errors',
+      (WidgetTester tester) async {
+    // Create mock instances for testing
+    final detector = ClothDetector(); // Initialize detector
+    final notificationService = NotificationServiceEnhanced();
+    final userProvider = UserProvider();
+
     // Build our app and trigger a frame.
-    const app = WashLensApp();
+    final app = WashLensApp(
+      detector: detector,
+      notificationService: notificationService,
+      userProvider: userProvider,
+    );
     await tester.pumpWidget(app);
 
     // Verify that the app builds successfully

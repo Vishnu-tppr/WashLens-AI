@@ -1,14 +1,15 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../providers/user_provider.dart';
 import '../../services/supabase_service.dart';
-import '../../services/notification_service.dart';
+import '../../services/notification_service_enhanced.dart';
 import '../../models/wash_entry.dart';
 import '../../models/app_user.dart' as models;
-import '../notifications/notifications_screen.dart';
+import '../theme/responsive_utils.dart';
 
 // Tailwind-style design tokens
 class AppColors {
@@ -60,7 +61,8 @@ class _HomeScreenState extends State<HomeScreen> {
   WashEntry? _nextWash;
   Timer? _countdownTimer;
   Duration _remainingTime = Duration.zero;
-  final NotificationService _notificationService = NotificationService();
+  final NotificationServiceEnhanced _notificationService =
+      NotificationServiceEnhanced();
 
   @override
   void initState() {
@@ -78,11 +80,14 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadNextWash() async {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     if (userProvider.currentUser != null) {
-      final entries = await SupabaseService.getWashEntries(userProvider.currentUser!.id);
+      final entries =
+          await SupabaseService.getWashEntries(userProvider.currentUser!.id);
       // Find the next pending wash (earliest givenAt that hasn't returned)
       final pendingWashes = entries
           .map((e) => WashEntry.fromJson(e))
-          .where((wash) => wash.status != WashStatus.returned && wash.status != WashStatus.completed)
+          .where((wash) =>
+              wash.status != WashStatus.returned &&
+              wash.status != WashStatus.completed)
           .toList();
 
       if (pendingWashes.isNotEmpty) {
@@ -121,12 +126,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // Only schedule if deadline is in the future and wash status is not completed
     if (pickupDeadline.isAfter(DateTime.now()) &&
-        (_nextWash!.status != WashStatus.completed && _nextWash!.status != WashStatus.returned)) {
-      await _notificationService.scheduleReminder(
+        (_nextWash!.status != WashStatus.completed &&
+            _nextWash!.status != WashStatus.returned)) {
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      await _notificationService.scheduleReminderNotification(
         washId: _nextWash!.id,
         dhobiName: _nextWash!.dhobiName,
-        itemCount: _nextWash!.givenCounts.values.fold(0, (sum, count) => sum + count),
+        itemCount:
+            _nextWash!.givenCounts.values.fold(0, (sum, count) => sum + count),
         scheduledDate: pickupDeadline,
+        userSettings: userProvider.userSettings!,
       );
     }
   }
@@ -154,7 +163,7 @@ class _HomeScreenState extends State<HomeScreen> {
   int get _hours => _remainingTime.inHours % 24;
   int get _minutes => _remainingTime.inMinutes % 60;
 
-  late bool _hasUnreadNotifications = demoNotifications.any((item) => item.highlightDot);
+  late bool _hasUnreadNotifications = false; // TODO: Implement real notification checking
 
   String get _dueText {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
@@ -182,13 +191,14 @@ class _HomeScreenState extends State<HomeScreen> {
     // --- Global font override ---
     final theme = Theme.of(context);
     final dark = theme.brightness == Brightness.dark;
+    final r = context.responsive;
 
     return Scaffold(
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+          padding: r.padding(horizontal: 24, vertical: 24),
           child: ListView(
-            padding: const EdgeInsets.only(bottom: 120),
+            padding: EdgeInsets.only(bottom: r.height(120)),
             children: [
               // Header
               Row(
@@ -197,14 +207,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   Row(
                     children: [
                       const _Avatar(),
-                      const SizedBox(width: 12),
+                      r.spacingWidth(12),
                       Consumer<UserProvider>(
                         builder: (context, userProvider, _) {
                           final userName = userProvider.userName;
                           return Text(
                             'Hi, $userName 👋',
                             style: GoogleFonts.plusJakartaSans(
-                              fontSize: 24,
+                              fontSize: r.fontSize(24, min: 18, max: 28),
                               fontWeight: FontWeight.w700,
                               color: AppColors.textLightPrimary,
                             ),
@@ -219,32 +229,33 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       IconButton(
                         onPressed: () async {
-                          final result = await Navigator.pushNamed(context, '/notifications');
+                          final result = await Navigator.pushNamed(
+                              context, '/notifications');
                           if (result == true && mounted) {
                             setState(() {
                               _hasUnreadNotifications = false;
                             });
                           }
                         },
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.notifications_outlined,
-                          size: 30,
+                          size: r.iconSize(30),
                           color: AppColors.textLightSecondary,
                         ),
                       ),
                       if (_hasUnreadNotifications)
                         Positioned(
-                          top: 8,
-                          right: 8,
+                          top: r.size(8),
+                          right: r.size(8),
                           child: Container(
-                            width: 11,
-                            height: 11,
+                            width: r.size(11),
+                            height: r.size(11),
                             decoration: BoxDecoration(
                               color: const Color.fromARGB(255, 250, 2, 2),
                               shape: BoxShape.circle,
                               border: Border.all(
                                 color: AppColors.cardLight,
-                                width: 2,
+                                width: r.size(2),
                               ),
                             ),
                           ),
@@ -253,7 +264,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 24),
+              r.spacingHeight(24),
 
               // Next Return card
               _Card(
@@ -268,20 +279,20 @@ class _HomeScreenState extends State<HomeScreen> {
                         Text(
                           'Next Return',
                           style: GoogleFonts.plusJakartaSans(
-                            fontSize: 16,
+                            fontSize: r.fontSize(16, min: 14, max: 18),
                             fontWeight: FontWeight.w600,
                             color: AppColors.textLightSecondary,
                           ),
                         ),
                         Row(
                           children: [
-                            const Icon(Icons.error_outline,
-                                size: 16, color: AppColors.red500),
-                            const SizedBox(width: 6),
+                            Icon(Icons.error_outline,
+                                size: r.iconSize(16), color: AppColors.red500),
+                            r.spacingWidth(6),
                             Text(
                               '1 item missing!',
                               style: GoogleFonts.plusJakartaSans(
-                                fontSize: 16,
+                                fontSize: r.fontSize(16, min: 14, max: 18),
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.red500,
                               ),
@@ -290,52 +301,55 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
+                    r.spacingHeight(8),
                     Text(
                       _dueText,
                       style: GoogleFonts.plusJakartaSans(
-                        fontSize: 20,
+                        fontSize: r.fontSize(20, min: 18, max: 24),
                         fontWeight: FontWeight.w700,
                         color: AppColors.textLightPrimary,
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    r.spacingHeight(20),
 
                     // Countdown timer
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        _TimeBlock(value: _formatTimeUnit(_days), label: 'Days'),
+                        _TimeBlock(
+                            value: _formatTimeUnit(_days), label: 'Days'),
                         const _TimeColon(),
-                        _TimeBlock(value: _formatTimeUnit(_hours), label: 'Hours'),
+                        _TimeBlock(
+                            value: _formatTimeUnit(_hours), label: 'Hours'),
                         const _TimeColon(),
-                        _TimeBlock(value: _formatTimeUnit(_minutes), label: 'Minutes'),
+                        _TimeBlock(
+                            value: _formatTimeUnit(_minutes), label: 'Minutes'),
                       ],
                     ),
-                    const SizedBox(height: 24),
+                    r.spacingHeight(24),
 
                     // Buttons
                     Row(
                       children: [
                         Expanded(
                           child: _PillButton(
-                            label: 'Report Missing',
+                            label: 'Remainder',
                             background: AppColors.secondary
                                 .withOpacity(dark ? 0.10 : 0.20),
                             foreground:
                                 dark ? AppColors.secondary : AppColors.primary,
                             onTap: () =>
-                                Navigator.pushNamed(context, '/return-summary'),
+                                Navigator.pushNamed(context, '/notification-settings'),
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        r.spacingWidth(12),
                         Expanded(
                           child: _PillButton(
                             label: 'Mark Returned',
                             background: AppColors.primary,
                             foreground: Colors.white,
                             onTap: () =>
-                                Navigator.pushNamed(context, '/return-summary'),
+                                Navigator.pushNamed(context, '/mark_returned'),
                           ),
                         ),
                       ],
@@ -343,14 +357,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+              r.spacingHeight(16),
 
               // GRID
               Column(
                 children: [
-                  // New Wash — full width, 140px height
+                  // New Wash — full width, responsive height
                   SizedBox(
-                    height: 140, // EXACTLY 140px
+                    height: r.height(140), // Responsive height
                     width: double.infinity,
                     child: _Pressable(
                       onTap: () =>
@@ -358,19 +372,19 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Container(
                         decoration: BoxDecoration(
                           color: AppColors.primary,
-                          borderRadius: BorderRadius.circular(28),
+                          borderRadius: r.borderRadius(28),
                           boxShadow: softShadow(dark),
                         ),
-                        child: const Column(
+                        child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(Icons.camera_alt_outlined,
-                                size: 32, color: Colors.white),
-                            SizedBox(height: 8),
+                                size: r.iconSize(32), color: Colors.white),
+                            r.spacingHeight(8),
                             Text(
                               "New Wash",
                               style: TextStyle(
-                                fontSize: 18,
+                                fontSize: r.fontSize(18, min: 16, max: 20),
                                 fontWeight: FontWeight.w700,
                                 color: Colors.white,
                               ),
@@ -380,7 +394,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  r.spacingHeight(16),
                   // Two half tiles
                   Row(
                     children: [
@@ -396,7 +410,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           onTap: () => Navigator.pushNamed(context, '/history'),
                         ),
                       ),
-                      const SizedBox(width: 16),
+                      r.spacingWidth(16),
                       Expanded(
                         child: _SmallInfoTile(
                           iconBg: dark
@@ -406,6 +420,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           icon: Icons.auto_awesome,
                           title: 'Quick Add',
                           subtitle: 'Manual mode',
+                          onTap: () => Navigator.pushNamed(context, '/quick-add'),
                         ),
                       ),
                     ],
@@ -423,24 +438,24 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Container(
             decoration: BoxDecoration(
               color: AppColors.cardLight.withOpacity(0.8),
-              border: const Border(
+              border: Border(
                 top: BorderSide(
-                  color: Color(0xFFE5E7EB),
-                  width: 1,
+                  color: const Color(0xFFE5E7EB),
+                  width: r.size(1),
                 ),
               ),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.05),
-                  blurRadius: 8,
-                  offset: const Offset(0, -2),
+                  blurRadius: r.size(8),
+                  offset: Offset(0, r.size(-2)),
                 ),
               ],
             ),
-            height: 80,
+            height: r.height(80),
             child: SafeArea(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
+                padding: r.horizontalPadding(8),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
@@ -457,8 +472,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         index: 1,
                         isSelected: false),
                     _buildTabItem(
-                        icon: Icons.receipt_long_outlined,
-                        selectedIcon: Icons.receipt_long,
+                        icon: Icons.history_outlined,
+                        selectedIcon: Icons.history,
                         label: 'History',
                         index: 2,
                         isSelected: false),
@@ -485,6 +500,7 @@ class _HomeScreenState extends State<HomeScreen> {
     required int index,
     required bool isSelected,
   }) {
+    final r = context.responsive;
     return Expanded(
       child: InkWell(
         onTap: () {
@@ -511,13 +527,13 @@ class _HomeScreenState extends State<HomeScreen> {
               isSelected ? selectedIcon : icon,
               color:
                   isSelected ? AppColors.primary : AppColors.textLightSecondary,
-              size: 30,
+              size: r.iconSize(30),
             ),
-            const SizedBox(height: 4),
+            r.spacingHeight(4),
             Text(
               label,
               style: GoogleFonts.plusJakartaSans(
-                fontSize: 12,
+                fontSize: r.fontSize(12, min: 10, max: 14),
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                 color: isSelected
                     ? AppColors.primary
@@ -536,46 +552,59 @@ class _Avatar extends StatelessWidget {
   const _Avatar();
   @override
   Widget build(BuildContext context) {
+    final r = context.responsive;
     return Consumer<UserProvider>(
       builder: (context, userProvider, _) {
         final userName = userProvider.userName;
         final firstInitial =
             userName.isNotEmpty ? userName[0].toUpperCase() : 'U';
 
-        // Check if user has a profile photo
+        // Check if user has a profile photo (supports both Supabase and Firebase)
         final currentAuthUser = userProvider.currentUser;
         String? avatarUrl;
 
-        if (currentAuthUser != null && currentAuthUser is models.SupabaseAuthUser) {
-          // Check for avatar_url in user metadata
-          final userMetadata = currentAuthUser.user.userMetadata;
-          if (userMetadata != null && userMetadata.containsKey('avatar_url')) {
-            avatarUrl = userMetadata['avatar_url'] as String?;
+        if (currentAuthUser != null) {
+          if (currentAuthUser is models.SupabaseAuthUser) {
+            // Supabase user - check for avatar_url in user metadata
+            final userMetadata = currentAuthUser.user.userMetadata;
+            if (userMetadata != null && userMetadata.containsKey('avatar_url')) {
+              avatarUrl = userMetadata['avatar_url'] as String?;
+            }
+          } else if (currentAuthUser is models.FirebaseAuthUser) {
+            // Firebase user - get photoURL from Google Sign-In
+            avatarUrl = currentAuthUser.photoURL;
           }
         }
 
         // If we have an avatar URL, show the image; otherwise show letter avatar
         if (avatarUrl != null && avatarUrl.isNotEmpty) {
           return CircleAvatar(
-            radius: 24,
+            key: ValueKey(avatarUrl), // Force rebuild when URL changes
+            radius: r.avatarSize(24),
             backgroundColor: AppColors.primary,
-            backgroundImage: NetworkImage(avatarUrl),
+            backgroundImage: avatarUrl.startsWith('http')
+                ? NetworkImage(avatarUrl) as ImageProvider
+                : FileImage(File(avatarUrl)),
             onBackgroundImageError: (_, __) {
               // Fallback to letter avatar if image fails to load
             },
-            child: avatarUrl.isEmpty ? Text(
-              firstInitial,
-              style: GoogleFonts.plusJakartaSans(
-                  color: Colors.white, fontWeight: FontWeight.w700),
-            ) : null,
+            child: avatarUrl.isEmpty
+                ? Text(
+                    firstInitial,
+                    style: GoogleFonts.plusJakartaSans(
+                        fontSize: r.fontSize(14, min: 12, max: 16),
+                        color: Colors.white, fontWeight: FontWeight.w700),
+                  )
+                : null,
           );
         } else {
           return CircleAvatar(
-            radius: 24,
+            radius: r.avatarSize(24),
             backgroundColor: AppColors.primary,
             child: Text(
               firstInitial,
               style: GoogleFonts.plusJakartaSans(
+                  fontSize: r.fontSize(14, min: 12, max: 16),
                   color: Colors.white, fontWeight: FontWeight.w700),
             ),
           );
@@ -592,13 +621,14 @@ class _Card extends StatelessWidget {
   const _Card({required this.child, required this.dark});
   @override
   Widget build(BuildContext context) {
+    final r = context.responsive;
     return _Pressable(
       scale: 1.02,
       child: Container(
-        padding: const EdgeInsets.all(24),
+        padding: r.allPadding(24),
         decoration: BoxDecoration(
           color: AppColors.cardLight,
-          borderRadius: BorderRadius.circular(28),
+          borderRadius: r.borderRadius(28),
           boxShadow: softShadow(dark),
         ),
         child: child,
@@ -614,19 +644,20 @@ class _TimeBlock extends StatelessWidget {
   const _TimeBlock({required this.value, required this.label});
   @override
   Widget build(BuildContext context) {
+    final r = context.responsive;
     return Column(
       children: [
         Text(value,
             style: GoogleFonts.plusJakartaSans(
-              fontSize: 32,
+              fontSize: r.fontSize(32, min: 24, max: 40),
               fontWeight: FontWeight.w700,
               color: AppColors.primary,
               height: 1.1,
             )),
-        const SizedBox(height: 4),
+        r.spacingHeight(4),
         Text(label,
             style: GoogleFonts.plusJakartaSans(
-                fontSize: 12,
+                fontSize: r.fontSize(12, min: 10, max: 14),
                 fontWeight: FontWeight.w500,
                 color: AppColors.textLightSecondary)),
       ],
@@ -639,12 +670,13 @@ class _TimeColon extends StatelessWidget {
   const _TimeColon();
   @override
   Widget build(BuildContext context) {
+    final r = context.responsive;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: EdgeInsets.only(bottom: r.height(12)),
       child: Text(
         ':',
         style: GoogleFonts.plusJakartaSans(
-          fontSize: 32,
+          fontSize: r.fontSize(32, min: 24, max: 40),
           fontWeight: FontWeight.w700,
           color: AppColors.primary,
           height: 1.1,
@@ -668,19 +700,20 @@ class _PillButton extends StatelessWidget {
   });
   @override
   Widget build(BuildContext context) {
+    final r = context.responsive;
     return Material(
       color: background,
-      borderRadius: BorderRadius.circular(24),
+      borderRadius: r.borderRadius(24),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: r.borderRadius(24),
         child: Container(
           alignment: Alignment.center,
-          padding: const EdgeInsets.symmetric(vertical: 14),
+          padding: EdgeInsets.symmetric(vertical: r.height(14)),
           child: Text(
             label,
             style: GoogleFonts.plusJakartaSans(
-              fontSize: 16,
+              fontSize: r.fontSize(16, min: 14, max: 18),
               fontWeight: FontWeight.w700,
               color: foreground,
             ),
@@ -709,39 +742,41 @@ class _SmallInfoTile extends StatelessWidget {
   });
   @override
   Widget build(BuildContext context) {
+    final r = context.responsive;
     return _Pressable(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(20),
+        height: r.size(150), // Fixed height to equalize sizes
+        padding: r.allPadding(20),
         decoration: BoxDecoration(
           color: AppColors.cardLight,
-          borderRadius: BorderRadius.circular(28),
+          borderRadius: r.borderRadius(28),
           boxShadow: softShadow(false),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              width: 48,
-              height: 48,
+              width: r.size(48),
+              height: r.size(48),
               decoration: BoxDecoration(
-                  color: iconBg, borderRadius: BorderRadius.circular(14)),
+                  color: iconBg, borderRadius: r.borderRadius(14)),
               alignment: Alignment.center,
-              child: Icon(icon, color: iconColor, size: 28),
+              child: Icon(icon, color: iconColor, size: r.iconSize(28)),
             ),
-            const SizedBox(height: 14),
+            r.spacingHeight(14),
             Text(
               title,
               style: GoogleFonts.plusJakartaSans(
-                  fontSize: 16,
+                  fontSize: r.fontSize(16, min: 14, max: 18),
                   fontWeight: FontWeight.w700,
                   color: AppColors.textLightPrimary),
             ),
-            const SizedBox(height: 2),
+            r.spacingHeight(2),
             Text(
               subtitle,
               style: GoogleFonts.plusJakartaSans(
-                  fontSize: 12,
+                  fontSize: r.fontSize(12, min: 10, max: 14),
                   fontWeight: FontWeight.w500,
                   color: AppColors.textLightSecondary),
             ),

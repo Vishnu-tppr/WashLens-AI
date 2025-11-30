@@ -1,12 +1,19 @@
+import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'notification_settings_screen.dart';
+import 'privacy_policy_screen.dart';
 import '../theme/app_theme.dart';
+import '../theme/responsive_utils.dart';
 import '../../providers/user_provider.dart';
 import '../../services/export_service.dart';
 import '../../services/supabase_service.dart';
+import '../../models/app_user.dart' as models;
+
+// Import the PDF quality enum
 
 // Tailwind tokens
 class AppColors {
@@ -48,42 +55,64 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  final String _pdfQuality = 'High';
+  String _pdfQuality = 'High';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPdfQuality();
+  }
+
+  // Load PDF quality from shared preferences
+  Future<void> _loadPdfQuality() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedQuality = prefs.getString('pdf_export_quality');
+      if (savedQuality != null && mounted) {
+        setState(() => _pdfQuality = savedQuality);
+      }
+    } catch (e) {
+      debugPrint('Error loading PDF quality: $e');
+    }
+  }
+
+  // Save PDF quality to shared preferences
+  Future<void> _savePdfQuality(String quality) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('pdf_export_quality', quality);
+    } catch (e) {
+      debugPrint('Error saving PDF quality: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final r = context.responsive;
     return Consumer<UserProvider>(
       builder: (context, userProvider, child) {
-        final screenHeight = MediaQuery.of(context).size.height;
-        final screenWidth = MediaQuery.of(context).size.width;
-        final horizontalPadding = screenWidth * 0.04;
-        final verticalSpacing = screenHeight * 0.012;
-
         return Scaffold(
           backgroundColor: AppColors.bgLight,
           appBar: AppBar(
-            title: const Text(
+            title: Text(
               'Settings',
               style: TextStyle(
                 color: AppTheme.textPrimary,
-                fontSize: 20,
+                fontSize: r.fontSize(20, min: 18, max: 22),
                 fontWeight: FontWeight.w600,
               ),
             ),
             backgroundColor: AppColors.cardLight,
           ),
           body: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: horizontalPadding,
-              vertical: screenHeight * 0.015,
-            ),
+            padding: r.padding(horizontal: 16, vertical: 15),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // ACCOUNT
                 const _SectionHeader(label: "ACCOUNT"),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  padding: r.horizontalPadding(8),
                   child: _Card(
                     child: Column(
                       children: [
@@ -95,6 +124,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 ? userName.substring(0, 2).toUpperCase()
                                 : 'U';
 
+                            // Get avatar URL from user metadata (supports both Supabase and Firebase)
+                            String? avatarUrl;
+                            final currentAuthUser = userProvider.currentUser;
+                            if (currentAuthUser != null) {
+                              if (currentAuthUser is models.SupabaseAuthUser) {
+                                final userMetadata = currentAuthUser.user.userMetadata;
+                                if (userMetadata != null &&
+                                    userMetadata.containsKey('avatar_url')) {
+                                  avatarUrl = userMetadata['avatar_url'] as String?;
+                                }
+                              } else if (currentAuthUser is models.FirebaseAuthUser) {
+                                // Firebase user - get photoURL from Google Sign-In
+                                avatarUrl = currentAuthUser.photoURL;
+                              }
+                            }
+
                             return InkWell(
                               onTap: () =>
                                   Navigator.pushNamed(context, '/edit-profile'),
@@ -103,23 +148,46 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     horizontal: 16, vertical: 16),
                                 child: Row(
                                   children: [
+                                    // Profile photo or initials
                                     Container(
                                       width: 60,
                                       height: 60,
-                                      decoration: const BoxDecoration(
-                                        color: Color(0xFF4A6FFF),
+                                      decoration: BoxDecoration(
+                                        color: avatarUrl != null &&
+                                                avatarUrl.isNotEmpty
+                                            ? Colors.transparent
+                                            : const Color(0xFF4A6FFF),
                                         shape: BoxShape.circle,
                                       ),
-                                      alignment: Alignment.center,
-                                      child: Text(
-                                        initials,
-                                        style: GoogleFonts.plusJakartaSans(
-                                            fontSize: 26,
-                                            fontWeight: FontWeight.w700,
-                                            color: Colors.white),
-                                      ),
+                                      child: avatarUrl != null &&
+                                              avatarUrl.isNotEmpty
+                                          ? ClipOval(
+                                              child: avatarUrl
+                                                      .startsWith('http')
+                                                  ? Image.network(
+                                                      avatarUrl,
+                                                      key: ValueKey(avatarUrl),
+                                                      fit: BoxFit.cover,
+                                                      errorBuilder: (context,
+                                                          error, stackTrace) {
+                                                        return _buildInitialsWidget(
+                                                            initials);
+                                                      },
+                                                    )
+                                                  : Image.file(
+                                                      File(avatarUrl),
+                                                      key: ValueKey(avatarUrl),
+                                                      fit: BoxFit.cover,
+                                                      errorBuilder: (context,
+                                                          error, stackTrace) {
+                                                        return _buildInitialsWidget(
+                                                            initials);
+                                                      },
+                                                    ),
+                                            )
+                                          : _buildInitialsWidget(initials),
                                     ),
-                                    const SizedBox(width: 14),
+                                    r.spacingWidth(14),
                                     Expanded(
                                       child: Column(
                                         crossAxisAlignment:
@@ -128,17 +196,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                           Text(
                                             userName,
                                             style: GoogleFonts.plusJakartaSans(
-                                                fontSize: 17,
+                                                fontSize: r.fontSize(17, min: 15, max: 19),
                                                 fontWeight: FontWeight.w600,
                                                 color: AppColors.textPrimary),
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
                                           ),
-                                          const SizedBox(height: 2),
+                                          r.spacingHeight(2),
                                           Text(
                                             userEmail,
                                             style: GoogleFonts.plusJakartaSans(
-                                                fontSize: 13,
+                                                fontSize: r.fontSize(13, min: 11, max: 15),
                                                 fontWeight: FontWeight.w400,
                                                 color: AppColors.textSecondary),
                                             maxLines: 2,
@@ -163,30 +231,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         InkWell(
                           onTap: _showSignOutDialog,
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 16),
+                            padding: r.padding(horizontal: 16, vertical: 16),
                             child: Row(
                               children: [
                                 Container(
-                                  width: 40,
-                                  height: 40,
+                                  width: r.iconSize(40),
+                                  height: r.iconSize(40),
                                   decoration: BoxDecoration(
                                     color: AppColors.red100,
-                                    borderRadius: BorderRadius.circular(16),
+                                    borderRadius: r.borderRadius(16),
                                   ),
-                                  child: const Icon(Icons.logout,
-                                      color: AppColors.red500),
+                                  child: Icon(Icons.logout,
+                                      color: AppColors.red500,
+                                      size: r.iconSize(24)),
                                 ),
-                                const SizedBox(width: 12),
+                                r.spacingWidth(12),
                                 Text("Sign Out",
                                     style: GoogleFonts.plusJakartaSans(
-                                      fontSize: 15,
+                                      fontSize: r.fontSize(15, min: 13, max: 17),
                                       fontWeight: FontWeight.w600,
                                       color: AppColors.textPrimary,
                                     )),
                                 const Spacer(),
-                                const Icon(Icons.chevron_right,
-                                    color: AppColors.textSecondary),
+                                Icon(Icons.chevron_right,
+                                    color: AppColors.textSecondary,
+                                    size: r.iconSize(20)),
                               ],
                             ),
                           ),
@@ -196,12 +265,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ),
 
-                SizedBox(height: verticalSpacing),
+                r.spacingHeight(12),
 
                 // DATA MANAGEMENT
                 const _SectionHeader(label: "DATA MANAGEMENT"),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  padding: r.horizontalPadding(8),
                   child: _Card(
                     child: Column(
                       children: [
@@ -211,7 +280,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           iconColor: AppColors.primary,
                           title: "PDF Export Quality",
                           subtitle: _pdfQuality,
-                          onTap: () {},
+                          onTap: _showPdfQualityDialog,
                         ),
                         _Divider(),
                         _SettingsTile(
@@ -234,12 +303,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ),
 
-                SizedBox(height: verticalSpacing),
+                r.spacingHeight(12),
 
                 // NOTIFICATIONS & WIDGETS
                 const _SectionHeader(label: "NOTIFICATIONS & WIDGETS"),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  padding: r.horizontalPadding(8),
                   child: _Card(
                     child: _SettingsTile(
                       icon: Icons.notifications,
@@ -259,19 +328,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ),
 
-                SizedBox(height: verticalSpacing),
+                r.spacingHeight(12),
 
                 // LEGAL & PRIVACY
                 const _SectionHeader(label: "LEGAL & PRIVACY"),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  padding: r.horizontalPadding(8),
                   child: _Card(
                     child: _SettingsTile(
                       icon: Icons.privacy_tip,
                       iconBg: AppColors.iconBgLight,
                       iconColor: AppColors.primary,
                       title: "Data Privacy",
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const PrivacyPolicyScreen(),
+                          ),
+                        );
+                      },
                     ),
                   ),
                 ),
@@ -381,47 +457,146 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Sign Out'),
-          content: const Text('Are you sure you want to sign out?'),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.red100,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child:
+                    const Icon(Icons.logout, color: AppColors.red500, size: 24),
+              ),
+              const SizedBox(width: 12),
+              const Text('Sign Out'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Are you sure you want to sign out?',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Your data is safely stored and will be available when you sign back in.',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 13,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
+              style: TextButton.styleFrom(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              ),
+              child: Text(
+                'Cancel',
+                style: GoogleFonts.plusJakartaSans(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textSecondary,
+                ),
+              ),
             ),
             ElevatedButton(
-              onPressed: () async {
-                Navigator.pop(context); // Close dialog
-
-                // Show loading
-                showDialog(
-                  context: context,
-                  barrierDismissible: false,
-                  builder: (context) => const Center(
-                    child: CircularProgressIndicator(),
-                  ),
-                );
-
-                // Sign out
-                final userProvider =
-                    Provider.of<UserProvider>(context, listen: false);
-                await userProvider.signOut();
-
-                // Navigate to login
-                if (mounted) {
-                  Navigator.of(context).pop(); // Close loading
-                  Navigator.pushNamedAndRemoveUntil(
-                      context, '/login', (route) => false);
-                }
-              },
+              onPressed: () => _handleSignOut(),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
+                backgroundColor: AppColors.red500,
+                foregroundColor: Colors.white,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
-              child: const Text('Sign Out'),
+              child: Text(
+                'Sign Out',
+                style: GoogleFonts.plusJakartaSans(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
           ],
         );
       },
     );
+  }
+
+  Future<void> _handleSignOut() async {
+    Navigator.pop(context); // Close dialog
+
+    // Show loading with better UX
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Center(
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 16),
+              Text(
+                'Signing out...',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    try {
+      // Sign out
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      await userProvider.signOut();
+
+      // Small delay for smooth transition
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      // Navigate to login
+      if (mounted) {
+        Navigator.of(context).pop(); // Close loading
+        Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.of(context).pop(); // Close loading
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(child: Text('Failed to sign out: ${e.toString()}')),
+              ],
+            ),
+            backgroundColor: AppColors.red500,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _handleExportAllData() async {
@@ -469,9 +644,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Delete Account'),
-          content: const Text(
-            'Are you sure you want to delete your account? This action cannot be undone and will permanently delete all your data including wash entries, settings, and analytics.',
+          title: const Row(
+            children: [
+              Icon(Icons.warning_rounded, color: AppColors.red500, size: 28),
+              SizedBox(width: 12),
+              Text('Delete Account'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Are you sure you want to delete your account? This action cannot be undone.',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'This will permanently delete:',
+                style: TextStyle(fontWeight: FontWeight.w500),
+              ),
+              const SizedBox(height: 8),
+              _buildDeleteWarningItem('All wash entries and history'),
+              _buildDeleteWarningItem('All saved dhobis and categories'),
+              _buildDeleteWarningItem('Your account and profile data'),
+              _buildDeleteWarningItem('All settings and preferences'),
+            ],
           ),
           actions: [
             TextButton(
@@ -479,98 +677,313 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: const Text('Cancel'),
             ),
             ElevatedButton(
-              onPressed: () async {
-                Navigator.of(context).pop(); // Close dialog
-
-                // Show loading
-                showDialog(
-                  context: context,
-                  barrierDismissible: false,
-                  builder: (context) => const Center(
-                    child: CircularProgressIndicator(),
-                  ),
-                );
-
-                try {
-                  final userProvider = Provider.of<UserProvider>(context, listen: false);
-                  final userId = userProvider.currentUser?.id;
-
-                  if (userId == null) {
-                    throw Exception('User not found');
-                  }
-
-                  // First sign out the user to prevent further operations
-                  await userProvider.signOut();
-
-                  // Delete user data from Supabase (after sign out to avoid auth issues)
-                  if (SupabaseService.isAvailable && SupabaseService.client != null) {
-                    try {
-                      // Delete all wash entries
-                      await SupabaseService.client!
-                          .from('wash_entries')
-                          .delete()
-                          .eq('user_id', userId);
-
-                      // Delete all dhobis
-                      await SupabaseService.client!
-                          .from('dhobis')
-                          .delete()
-                          .eq('user_id', userId);
-
-                      // Delete all categories
-                      await SupabaseService.client!
-                          .from('categories')
-                          .delete()
-                          .eq('user_id', userId);
-
-                      debugPrint('User data deleted successfully');
-                    } catch (deleteError) {
-                      debugPrint('Error deleting user data: $deleteError');
-                      // Continue with navigation even if data deletion partially fails
-                    }
-                  }
-
-                  // Close loading dialog and navigate
-                  if (mounted) {
-                    // Pop the loading dialog
-                    Navigator.of(context).pop();
-
-                    // Use post-frame callback to ensure navigation happens after build
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (mounted) {
-                        Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
-                      }
-                    });
-
-                    // Show success message immediately
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Account deleted successfully'),
-                        backgroundColor: AppColors.primary,
-                      ),
-                    );
-                  }
-                } catch (e) {
-                  if (mounted) {
-                    Navigator.of(context).pop(); // Close loading
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Failed to delete account: $e'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
-                }
-              },
+              onPressed: () => _handleDeleteAccount(),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
+                backgroundColor: AppColors.red500,
                 foregroundColor: Colors.white,
               ),
-              child: const Text('Delete Account'),
+              child: const Text('Delete Permanently'),
             ),
           ],
         );
       },
+    );
+  }
+
+  Widget _buildDeleteWarningItem(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 8, bottom: 4),
+      child: Row(
+        children: [
+          const Icon(Icons.close, size: 16, color: AppColors.red500),
+          const SizedBox(width: 8),
+          Expanded(child: Text(text, style: const TextStyle(fontSize: 13))),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _handleDeleteAccount() async {
+    Navigator.of(context).pop(); // Close dialog
+
+    // Show loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Center(
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 16),
+              Text(
+                'Deleting account...',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    try {
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      final userId = userProvider.currentUser?.id;
+
+      if (userId == null) {
+        throw Exception('User not found');
+      }
+
+      // Delete user data from Supabase first
+      if (SupabaseService.isAvailable && SupabaseService.client != null) {
+        try {
+          // Delete all wash entries
+          await SupabaseService.client!
+              .from('wash_entries')
+              .delete()
+              .eq('user_id', userId);
+
+          // Delete all dhobis
+          await SupabaseService.client!
+              .from('dhobis')
+              .delete()
+              .eq('user_id', userId);
+
+          // Delete all categories
+          await SupabaseService.client!
+              .from('categories')
+              .delete()
+              .eq('user_id', userId);
+
+          debugPrint('User data deleted successfully');
+        } catch (deleteError) {
+          debugPrint('Error deleting user data: $deleteError');
+          // Continue with account deletion even if some data deletion fails
+        }
+      }
+
+      // Delete the actual user account from Supabase Auth
+      if (SupabaseService.isAvailable) {
+        try {
+          await SupabaseService.client!.auth.admin.deleteUser(userId);
+          debugPrint('User account deleted from Supabase Auth successfully');
+        } catch (authDeleteError) {
+          debugPrint(
+              'Could not delete user from Supabase Auth (may need admin privileges): $authDeleteError');
+          // This is okay - user can still be signed out
+        }
+      }
+
+      // Sign out the user
+      await userProvider.signOut();
+
+      // Close loading dialog and navigate
+      if (mounted) {
+        // Pop the loading dialog
+        Navigator.of(context).pop();
+
+        // Navigate to login
+        Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Account deleted successfully. We\'re sorry to see you go!',
+                    style: TextStyle(fontWeight: FontWeight.w500),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: AppColors.red500,
+            duration: Duration(seconds: 4),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.of(context).pop(); // Close loading
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text('Failed to delete account: ${e.toString()}'),
+                ),
+              ],
+            ),
+            backgroundColor: AppColors.red500,
+            duration: const Duration(seconds: 5),
+            behavior: SnackBarBehavior.floating,
+            action: SnackBarAction(
+              label: 'Retry',
+              textColor: Colors.white,
+              onPressed: () => _showDeleteAccountDialog(),
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  // Show PDF quality selection dialog
+  void _showPdfQualityDialog() {
+    const qualityOptions = PdfQuality.values;
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.picture_as_pdf,
+                  color: AppColors.primary,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Text('PDF Export Quality'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Choose the quality settings for your PDF exports. Higher quality means larger file sizes.',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 20),
+              ...qualityOptions.map((quality) {
+                final isSelected = _pdfQuality == quality.displayName;
+                return InkWell(
+                  onTap: () async {
+                    setState(() => _pdfQuality = quality.displayName);
+                    await _savePdfQuality(quality.displayName);
+                    Navigator.pop(context);
+                  },
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? AppColors.primary.withOpacity(0.1)
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isSelected
+                            ? AppColors.primary
+                            : AppColors.textSecondary.withOpacity(0.2),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Radio<String>(
+                          value: quality.displayName,
+                          groupValue: _pdfQuality,
+                          onChanged: (value) async {
+                            if (value != null) {
+                              setState(() => _pdfQuality = value);
+                              await _savePdfQuality(value);
+                              Navigator.pop(context);
+                            }
+                          },
+                          activeColor: AppColors.primary,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                quality.displayName,
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                _getQualityDescription(quality),
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w400,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Get description for PDF quality option
+  String _getQualityDescription(PdfQuality quality) {
+    switch (quality) {
+      case PdfQuality.high:
+        return 'Maximum quality, A4 size (~1-2MB) - Best for printing';
+      case PdfQuality.medium:
+        return 'Good quality, A4 size (~500KB-1MB) - Balanced option';
+      case PdfQuality.low:
+        return 'Basic quality, A5 size (~100-500KB) - Smallest file size';
+    }
+  }
+
+  // Helper method to build initials widget
+  Widget _buildInitialsWidget(String initials) {
+    return Center(
+      child: Text(
+        initials,
+        style: GoogleFonts.plusJakartaSans(
+          fontSize: 26,
+          fontWeight: FontWeight.w700,
+          color: Colors.white,
+        ),
+      ),
     );
   }
 }
@@ -681,14 +1094,14 @@ class _SectionHeader extends StatelessWidget {
   const _SectionHeader({required this.label});
   @override
   Widget build(BuildContext context) {
+    final r = context.responsive;
     return Padding(
-      padding: const EdgeInsets.only(left: 8, bottom: 5, top: 8),
+      padding: EdgeInsets.only(left: r.width(8), bottom: r.height(5), top: r.height(8)),
       child: Text(
         label,
         style: GoogleFonts.plusJakartaSans(
-          fontWeight: FontWeight.w700,
-          fontSize: 11,
-          letterSpacing: 1.0,
+          fontSize: r.fontSize(12, min: 10, max: 14),
+          fontWeight: FontWeight.w500,
           color: AppColors.textSecondary,
         ),
       ),
@@ -702,13 +1115,14 @@ class _Card extends StatelessWidget {
   const _Card({required this.child});
   @override
   Widget build(BuildContext context) {
+    final r = context.responsive;
     return Container(
       decoration: BoxDecoration(
         color: AppColors.cardLight,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: r.borderRadius(22),
         boxShadow: softShadow,
       ),
-      padding: const EdgeInsets.all(6),
+      padding: r.allPadding(6),
       child: child,
     );
   }
@@ -717,10 +1131,13 @@ class _Card extends StatelessWidget {
 // Divider
 class _Divider extends StatelessWidget {
   @override
-  Widget build(BuildContext context) => Container(
-      height: 1,
+  Widget build(BuildContext context) {
+    final r = context.responsive;
+    return Container(
+      height: r.size(1),
       color: const Color(0xFFF1F5F9),
-      margin: const EdgeInsets.symmetric(horizontal: 8));
+      margin: r.horizontalPadding(8));
+  }
 }
 
 // Settings Tile
@@ -741,23 +1158,24 @@ class _SettingsTile extends StatelessWidget {
   });
   @override
   Widget build(BuildContext context) {
+    final r = context.responsive;
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+        padding: r.padding(horizontal: 8, vertical: 10),
         child: Row(
           children: [
             Container(
-              width: 40,
-              height: 40,
+              width: r.iconSize(40),
+              height: r.iconSize(40),
               decoration: BoxDecoration(
                 color: iconBg,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: r.borderRadius(14),
               ),
               alignment: Alignment.center,
-              child: Icon(icon, color: iconColor, size: 24),
+              child: Icon(icon, color: iconColor, size: r.iconSize(24)),
             ),
-            const SizedBox(width: 12),
+            r.spacingWidth(12),
             Expanded(
               child: RichText(
                 text: TextSpan(
@@ -765,7 +1183,7 @@ class _SettingsTile extends StatelessWidget {
                     TextSpan(
                       text: title,
                       style: GoogleFonts.plusJakartaSans(
-                        fontSize: 15,
+                        fontSize: r.fontSize(15, min: 13, max: 17),
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimary,
                       ),
@@ -774,7 +1192,7 @@ class _SettingsTile extends StatelessWidget {
                       TextSpan(
                         text: "  ",
                         style: GoogleFonts.plusJakartaSans(
-                          fontSize: 15,
+                          fontSize: r.fontSize(15, min: 13, max: 17),
                           fontWeight: FontWeight.w600,
                           color: AppColors.textPrimary,
                         ),
@@ -782,7 +1200,7 @@ class _SettingsTile extends StatelessWidget {
                       TextSpan(
                         text: subtitle,
                         style: GoogleFonts.plusJakartaSans(
-                          fontSize: 15,
+                          fontSize: r.fontSize(15, min: 13, max: 17),
                           fontWeight: FontWeight.w400,
                           color: AppColors.textSecondary,
                         ),
@@ -792,8 +1210,8 @@ class _SettingsTile extends StatelessWidget {
                 ),
               ),
             ),
-            const Icon(Icons.chevron_right,
-                color: AppColors.textSecondary, size: 20),
+            Icon(Icons.chevron_right,
+                color: AppColors.textSecondary, size: r.iconSize(20)),
           ],
         ),
       ),

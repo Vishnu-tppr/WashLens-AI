@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- WashLens AI primary color for notifications -->
+    <color name="notification_color">#4A6FFF</color>
+    <color name="notification_accent">#6EE7B7</color>
+</resources>

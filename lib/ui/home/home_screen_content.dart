@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'dart:io';
 import '../../providers/user_provider.dart';
-import '../../services/supabase_service.dart';
+import '../../models/app_user.dart' as models;
+import '../laundry/quick_add_laundry_screen.dart';
 
 /// Home Screen Content Widget
 /// This is the same content from the original HomeScreen but extracted as a reusable widget
@@ -13,28 +15,20 @@ class HomeScreenContent extends StatefulWidget {
 }
 
 class _HomeScreenContentState extends State<HomeScreenContent> {
-  List<Map<String, dynamic>> _washEntries = [];
-  bool _isLoadingEntries = true;
-
   @override
   void initState() {
     super.initState();
-    _loadWashEntries();
   }
 
-  Future<void> _loadWashEntries() async {
-    final userProvider = Provider.of<UserProvider>(context, listen: false);
-    if (userProvider.currentUser != null) {
-      final entries = await SupabaseService.getWashEntries(userProvider.currentUser!.id);
-      if (mounted) {
-        setState(() {
-          _washEntries = entries;
-          _isLoadingEntries = false;
-        });
-      }
-    } else {
-      setState(() => _isLoadingEntries = false);
-    }
+  void _showQuickAddLaundry(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => const QuickAddLaundryScreen(),
+    );
   }
 
   @override
@@ -77,17 +71,44 @@ class _HeaderSection extends StatelessWidget {
             Row(
               children: [
                 // User Avatar
-                CircleAvatar(
-                  radius: 22,
-                  backgroundColor: const Color(0xFFC7E6FF), // Light blue background
-                  child: Text(
-                    userName.isNotEmpty ? userName[0].toUpperCase() : 'U',
-                    style: const TextStyle(
-                      color: Colors.black54,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                    ),
-                  ),
+                Builder(
+                  builder: (context) {
+                    String? avatarUrl;
+                    final currentAuthUser = userProvider.currentUser;
+
+                    if (currentAuthUser != null &&
+                        currentAuthUser is models.SupabaseAuthUser) {
+                      final userMetadata = currentAuthUser.user.userMetadata;
+                      if (userMetadata != null &&
+                          userMetadata.containsKey('avatar_url')) {
+                        avatarUrl = userMetadata['avatar_url'] as String?;
+                      }
+                    }
+
+                    if (avatarUrl != null && avatarUrl.isNotEmpty) {
+                      return CircleAvatar(
+                        key: ValueKey(avatarUrl),
+                        radius: 22,
+                        backgroundColor: const Color(0xFFC7E6FF),
+                        backgroundImage: avatarUrl.startsWith('http')
+                            ? NetworkImage(avatarUrl) as ImageProvider
+                            : FileImage(File(avatarUrl)),
+                      );
+                    }
+
+                    return CircleAvatar(
+                      radius: 22,
+                      backgroundColor: const Color(0xFFC7E6FF),
+                      child: Text(
+                        userName.isNotEmpty ? userName[0].toUpperCase() : 'U',
+                        style: const TextStyle(
+                          color: Colors.black54,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                      ),
+                    );
+                  },
                 ),
                 const SizedBox(width: 12),
                 // Greeting Text
@@ -166,23 +187,28 @@ class _ReturnDueCard extends StatelessWidget {
                       fontWeight: FontWeight.w500,
                     ),
               ),
-              const Row(
-                children: [
-                  Icon(
-                    Icons.warning_amber,
-                    color: Color(0xFFDC2626), // missingItemRed
-                    size: 16,
-                  ),
-                  SizedBox(width: 4),
-                  Text(
-                    "1 item missing!",
-                    style: TextStyle(
-                      color: Color(0xFFDC2626),
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
+              InkWell(
+                onTap: () =>
+                    Navigator.pushNamed(context, '/notification-settings'),
+                child: const Row(
+                  children: [
+                    Icon(
+                      Icons.warning_amber,
+                      color: Color(0xFFDC2626), // missingItemRed
+                      size: 16,
                     ),
-                  ),
-                ],
+                    SizedBox(width: 4),
+                    Text(
+                      "remainder",
+                      style: TextStyle(
+                        color: Color(0xFFDC2626),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -216,17 +242,19 @@ class _ReturnDueCard extends StatelessWidget {
             children: [
               Expanded(
                 child: OutlinedButton(
-                  onPressed: () => Navigator.pushNamed(context, '/return-summary'),
+                  onPressed: () =>
+                      Navigator.pushNamed(context, '/notification-settings'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: const Color(0xFF4A6FFF), // kPrimary
-                    side: const BorderSide(color: Color(0xFF4A6FFF), width: 1.5),
+                    side:
+                        const BorderSide(color: Color(0xFF4A6FFF), width: 1.5),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
                   child: const Text(
-                    "Report Missing",
+                    "Remainder",
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                 ),
@@ -234,7 +262,8 @@ class _ReturnDueCard extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: () => Navigator.pushNamed(context, '/return-summary'),
+                  onPressed: () =>
+                      Navigator.pushNamed(context, ''),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF4A6FFF), // kPrimary
                     foregroundColor: Colors.white,
@@ -309,45 +338,145 @@ class _TimerSeparator extends StatelessWidget {
   }
 }
 
-// 3. New Wash Button (Large Blue)
+// 3. New Wash Section with options
 class _NewWashButton extends StatelessWidget {
   const _NewWashButton();
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 140,
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: () => Navigator.pushNamed(context, '/scan'),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF5773ff), // secondaryBlue
-          foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          "Add New Laundry",
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
           ),
-          elevation: 6,
-          shadowColor: const Color(0xFF4A6FFF).withOpacity(0.5), // primaryBlue
-          padding: EdgeInsets.zero,
         ),
-        child: const Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+        const SizedBox(height: 16),
+        Row(
           children: [
-            Icon(
-              Icons.camera_alt_outlined,
-              size: 40,
+            // Scan with AI button
+            Expanded(
+              child: Container(
+                height: 120,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF5773ff), Color(0xFF4A6FFF)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF4A6FFF).withOpacity(0.3),
+                      blurRadius: 12,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pushNamed(context, '/scan'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    padding: EdgeInsets.zero,
+                  ),
+                  child: const Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.camera_alt_outlined,
+                        size: 32,
+                        color: Colors.white,
+                      ),
+                      SizedBox(height: 6),
+                      Text(
+                        "Scan with AI",
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                      SizedBox(height: 2),
+                      Text(
+                        "Use camera",
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.white70,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
-            SizedBox(height: 8),
-            Text(
-              "New Wash",
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
+            const SizedBox(width: 16),
+            // Quick Add button
+            Expanded(
+              child: Container(
+                height: 120,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFE5E7EB), width: 1.5),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.1),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: ElevatedButton(
+                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const QuickAddLaundryScreen())),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    padding: EdgeInsets.zero,
+                  ),
+                  child: const Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.add_circle_outline,
+                        size: 32,
+                        color: Color(0xFF4A6FFF),
+                      ),
+                      SizedBox(height: 6),
+                      Text(
+                        "Quick Add",
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      SizedBox(height: 2),
+                      Text(
+                        "Manual entry",
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.black54,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ],
         ),
-      ),
+      ],
     );
   }
 }
@@ -403,7 +532,8 @@ class _FeatureCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20), // Use kBorderRadiusXl for consistency
+        borderRadius:
+            BorderRadius.circular(20), // Use kBorderRadiusXl for consistency
         boxShadow: [
           BoxShadow(
             color: Colors.grey.withOpacity(0.1),

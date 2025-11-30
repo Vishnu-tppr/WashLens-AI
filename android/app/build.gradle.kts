@@ -28,7 +28,7 @@ android {
         applicationId = "com.iamxfg.washlens_ai"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = 23  // Required by camera_android_camerax
+        minSdk = 23  // Required by Firebase Auth (was flutter.minSdkVersion)
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

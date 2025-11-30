@@ -99,7 +99,8 @@ class AuthErrorHandler {
             authError.type == AuthErrorType.invalidCredentials ||
             authError.type == AuthErrorType.userNotFound ||
             authError.type == AuthErrorType.accountDisabled ||
-            authError.type == AuthErrorType.emailAlreadyExists) {
+            authError.type == AuthErrorType.emailAlreadyExists ||
+            authError.type == AuthErrorType.googleSignInFailed) {
           throw authError;
         }
 
@@ -241,7 +242,7 @@ class AuthError {
 
   static const AuthError googleSignInFailed = AuthError._(
     type: AuthErrorType.googleSignInFailed,
-    message: 'Google sign-in failed. Please try again or use email/password.',
+    message: 'Google sign-in failed. This usually means Firebase is not properly configured.\n\nPlease:\n1. Download google-services.json from Firebase Console\n2. Place it in android/app/google-services.json\n3. Add SHA fingerprints to your Firebase project\n4. Rebuild the app.\n\nAlternatively, use email/password login.',
     icon: Icons.g_mobiledata,
     color: Colors.red,
   );

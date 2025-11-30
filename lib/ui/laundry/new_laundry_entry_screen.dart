@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
+import '../theme/responsive_utils.dart';
 
 /// New Laundry Entry Screen - For manually creating a new laundry entry
 class NewLaundryEntryScreen extends StatefulWidget {
@@ -12,6 +13,7 @@ class NewLaundryEntryScreen extends StatefulWidget {
 class _NewLaundryEntryScreenState extends State<NewLaundryEntryScreen> {
   final TextEditingController _dhobiController = TextEditingController();
   final TextEditingController _notesController = TextEditingController();
+  late ResponsiveUtils responsive;
 
   final Map<String, int> _laundryBasket = {
     'Shirts': 0,
@@ -24,14 +26,40 @@ class _NewLaundryEntryScreenState extends State<NewLaundryEntryScreen> {
   };
 
   final List<Map<String, dynamic>> _categories = [
-    {'name': 'Shirts', 'icon': Icons.checkroom, 'color': const Color(0xFF3B82F6)},
-    {'name': 'T-Shirts', 'icon': Icons.checkroom_outlined, 'color': const Color(0xFF10B981)},
+    {
+      'name': 'Shirts',
+      'icon': Icons.checkroom,
+      'color': const Color(0xFF3B82F6)
+    },
+    {
+      'name': 'T-Shirts',
+      'icon': Icons.checkroom_outlined,
+      'color': const Color(0xFF10B981)
+    },
     {'name': 'Pants', 'icon': Icons.person, 'color': const Color(0xFF8B5CF6)},
-    {'name': 'Towels', 'icon': Icons.dry_cleaning, 'color': const Color(0xFFF59E0B)},
-    {'name': 'Bedsheets', 'icon': Icons.bed, 'color': const Color(0xFFEF4444)},
-    {'name': 'Socks', 'icon': Icons.accessibility, 'color': const Color(0xFFF97316)},
+    {
+      'name': 'Towels',
+      'icon': Icons.dry_cleaning,
+      'color': const Color(0xFFF59E0B)
+    },
+    {
+      'name': 'Bedsheets',
+      'icon': Icons.bed,
+      'color': const Color(0xFFEF4444)
+    },
+    {
+      'name': 'Socks',
+      'icon': Icons.accessibility,
+      'color': const Color(0xFFF97316)
+    },
     {'name': 'Jeans', 'icon': Icons.man, 'color': const Color(0xFF6366F1)},
   ];
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    responsive = ResponsiveUtils(context);
+  }
 
   @override
   void dispose() {
@@ -40,34 +68,34 @@ class _NewLaundryEntryScreenState extends State<NewLaundryEntryScreen> {
     super.dispose();
   }
 
-  int get _totalItems => _laundryBasket.values.fold(0, (sum, count) => sum + count);
+  int get _totalItems =>
+      _laundryBasket.values.fold(0, (sum, count) => sum + count);
 
   @override
   Widget build(BuildContext context) {
-    final screenHeight = MediaQuery.of(context).size.height;
-    final screenWidth = MediaQuery.of(context).size.width;
-
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(
         backgroundColor: AppTheme.background,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppTheme.textPrimary),
+          icon: Icon(Icons.arrow_back, 
+            color: AppTheme.textPrimary,
+            size: responsive.iconSize(24)),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           'New Laundry Entry',
           style: TextStyle(
             color: AppTheme.textPrimary,
-            fontSize: 20,
+            fontSize: responsive.fontSize(20),
             fontWeight: FontWeight.w600,
           ),
         ),
       ),
       body: SingleChildScrollView(
         child: Padding(
-          padding: EdgeInsets.all(screenWidth * 0.04),
+          padding: responsive.allPadding(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -75,72 +103,68 @@ class _NewLaundryEntryScreenState extends State<NewLaundryEntryScreen> {
               Text(
                 'Dhobi / Laundry Service',
                 style: TextStyle(
-                  fontSize: screenWidth * 0.037,
+                  fontSize: responsive.fontSize(15),
                   fontWeight: FontWeight.w600,
                   color: AppTheme.textPrimary,
                 ),
               ),
-              SizedBox(height: screenHeight * 0.012),
+              SizedBox(height: responsive.height(10)),
               TextField(
                 controller: _dhobiController,
                 decoration: InputDecoration(
                   hintText: 'e.g., Raju Bhaiya',
                   hintStyle: TextStyle(
                     color: AppTheme.textTertiary,
-                    fontSize: screenWidth * 0.035,
+                    fontSize: responsive.fontSize(14),
                   ),
                   filled: true,
                   fillColor: Colors.white,
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(responsive.size(12)),
                     borderSide: BorderSide.none,
                   ),
-                  contentPadding: EdgeInsets.symmetric(
-                    horizontal: screenWidth * 0.04,
-                    vertical: screenHeight * 0.018,
-                  ),
+                  contentPadding: responsive.padding(horizontal: 16, vertical: 14),
                 ),
               ),
 
-              SizedBox(height: screenHeight * 0.025),
+              SizedBox(height: responsive.height(24)),
 
               // What are you sending?
               Text(
                 'What are you sending?',
                 style: TextStyle(
-                  fontSize: screenWidth * 0.04,
+                  fontSize: responsive.fontSize(16),
                   fontWeight: FontWeight.w600,
                   color: AppTheme.textPrimary,
                 ),
               ),
-              SizedBox(height: screenHeight * 0.015),
+              SizedBox(height: responsive.height(12)),
 
               // Category Icons Grid
               Wrap(
-                spacing: screenWidth * 0.02,
-                runSpacing: screenHeight * 0.012,
+                spacing: responsive.width(8),
+                runSpacing: responsive.height(10),
                 children: _categories.map((category) {
                   return _buildCategoryButton(
                     category['name'],
                     category['icon'],
                     category['color'],
-                    screenWidth,
                   );
                 }).toList(),
               ),
 
-              SizedBox(height: screenHeight * 0.025),
+              SizedBox(height: responsive.height(24)),
 
               // Notes
               Text(
                 'Notes (Optional)',
                 style: TextStyle(
-                  fontSize: screenWidth * 0.037,
+                  fontSize: responsive.fontSize(15),
                   fontWeight: FontWeight.w600,
                   color: AppTheme.textPrimary,
                 ),
               ),
-              SizedBox(height: screenHeight * 0.012),
+              SizedBox(height: responsive.height(10)),
               TextField(
                 controller: _notesController,
                 maxLines: 4,
@@ -148,58 +172,58 @@ class _NewLaundryEntryScreenState extends State<NewLaundryEntryScreen> {
                   hintText: 'e.g., Please use gentle wash for the blue shirt',
                   hintStyle: TextStyle(
                     color: AppTheme.textTertiary,
-                    fontSize: screenWidth * 0.035,
+                    fontSize: responsive.fontSize(14),
                   ),
                   filled: true,
                   fillColor: Colors.white,
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(responsive.size(12)),
                     borderSide: BorderSide.none,
                   ),
-                  contentPadding: EdgeInsets.all(screenWidth * 0.04),
+                  contentPadding: responsive.allPadding(16),
                 ),
               ),
 
-              SizedBox(height: screenHeight * 0.025),
+              SizedBox(height: responsive.height(24)),
 
               // Your Laundry Basket
               Text(
                 'Your Laundry Basket ($_totalItems Items)',
                 style: TextStyle(
-                  fontSize: screenWidth * 0.04,
+                  fontSize: responsive.fontSize(16),
                   fontWeight: FontWeight.w600,
                   color: AppTheme.textPrimary,
                 ),
               ),
-              SizedBox(height: screenHeight * 0.015),
+              SizedBox(height: responsive.height(12)),
 
               Container(
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(responsive.size(16)),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withOpacity(0.04),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
+                      blurRadius: responsive.size(8),
+                      offset: Offset(0, responsive.height(2)),
                     ),
                   ],
                 ),
                 child: Column(
-                  children: _laundryBasket.entries.where((e) => e.value > 0).map((entry) {
+                  children: _laundryBasket.entries
+                      .where((e) => e.value > 0)
+                      .map((entry) {
                     return _buildBasketItem(
                       entry.key,
                       entry.value,
                       _getCategoryIcon(entry.key),
                       _getCategoryColor(entry.key),
-                      screenWidth,
-                      screenHeight,
                     );
                   }).toList(),
                 ),
               ),
 
-              SizedBox(height: screenHeight * 0.03),
+              SizedBox(height: responsive.height(28)),
 
               // Save Entry Button
               SizedBox(
@@ -212,23 +236,23 @@ class _NewLaundryEntryScreenState extends State<NewLaundryEntryScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.primary,
                     foregroundColor: Colors.white,
-                    padding: EdgeInsets.symmetric(vertical: screenHeight * 0.02),
+                    padding: responsive.verticalPadding(18),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(responsive.size(12)),
                     ),
                     elevation: 0,
                   ),
                   child: Text(
                     'Save Entry',
                     style: TextStyle(
-                      fontSize: screenWidth * 0.042,
+                      fontSize: responsive.fontSize(16),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
               ),
 
-              SizedBox(height: screenHeight * 0.02),
+              SizedBox(height: responsive.height(16)),
             ],
           ),
         ),
@@ -236,7 +260,7 @@ class _NewLaundryEntryScreenState extends State<NewLaundryEntryScreen> {
     );
   }
 
-  Widget _buildCategoryButton(String name, IconData icon, Color color, double screenWidth) {
+  Widget _buildCategoryButton(String name, IconData icon, Color color) {
     final count = _laundryBasket[name] ?? 0;
     final isSelected = count > 0;
 
@@ -249,11 +273,11 @@ class _NewLaundryEntryScreenState extends State<NewLaundryEntryScreen> {
         });
       },
       child: Container(
-        width: screenWidth * 0.19,
-        padding: const EdgeInsets.symmetric(vertical: 12),
+        width: responsive.width(76),
+        padding: responsive.verticalPadding(12),
         decoration: BoxDecoration(
           color: isSelected ? color.withOpacity(0.15) : color.withOpacity(0.08),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(responsive.size(12)),
           border: Border.all(
             color: isSelected ? color : color.withOpacity(0.3),
             width: isSelected ? 2 : 1,
@@ -261,13 +285,13 @@ class _NewLaundryEntryScreenState extends State<NewLaundryEntryScreen> {
         ),
         child: Column(
           children: [
-            Icon(icon, color: color, size: 32),
-            const SizedBox(height: 6),
+            Icon(icon, color: color, size: responsive.iconSize(32)),
+            SizedBox(height: responsive.height(6)),
             Text(
               name,
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 11,
+                fontSize: responsive.fontSize(11),
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                 color: AppTheme.textPrimary,
               ),
@@ -283,14 +307,9 @@ class _NewLaundryEntryScreenState extends State<NewLaundryEntryScreen> {
     int count,
     IconData icon,
     Color color,
-    double screenWidth,
-    double screenHeight,
   ) {
     return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: screenWidth * 0.04,
-        vertical: screenHeight * 0.015,
-      ),
+      padding: responsive.padding(horizontal: 16, vertical: 12),
       decoration: const BoxDecoration(
         border: Border(
           bottom: BorderSide(
@@ -302,19 +321,19 @@ class _NewLaundryEntryScreenState extends State<NewLaundryEntryScreen> {
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(10),
+            padding: responsive.allPadding(10),
             decoration: BoxDecoration(
               color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(responsive.size(10)),
             ),
-            child: Icon(icon, color: color, size: 24),
+            child: Icon(icon, color: color, size: responsive.iconSize(24)),
           ),
-          SizedBox(width: screenWidth * 0.03),
+          SizedBox(width: responsive.width(12)),
           Expanded(
             child: Text(
               name,
               style: TextStyle(
-                fontSize: screenWidth * 0.04,
+                fontSize: responsive.fontSize(16),
                 fontWeight: FontWeight.w500,
                 color: AppTheme.textPrimary,
               ),
@@ -330,26 +349,28 @@ class _NewLaundryEntryScreenState extends State<NewLaundryEntryScreen> {
               });
             },
             icon: Container(
-              padding: const EdgeInsets.all(4),
+              padding: responsive.allPadding(4),
               decoration: const BoxDecoration(
                 color: AppTheme.background,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.remove, size: 18, color: AppTheme.textPrimary),
+              child: Icon(Icons.remove,
+                  size: responsive.iconSize(18), 
+                  color: AppTheme.textPrimary),
             ),
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
           ),
-          SizedBox(width: screenWidth * 0.03),
+          SizedBox(width: responsive.width(12)),
           Text(
             count.toString(),
             style: TextStyle(
-              fontSize: screenWidth * 0.042,
+              fontSize: responsive.fontSize(16),
               fontWeight: FontWeight.w600,
               color: AppTheme.textPrimary,
             ),
           ),
-          SizedBox(width: screenWidth * 0.03),
+          SizedBox(width: responsive.width(12)),
           // Increase button
           IconButton(
             onPressed: () {
@@ -358,12 +379,14 @@ class _NewLaundryEntryScreenState extends State<NewLaundryEntryScreen> {
               });
             },
             icon: Container(
-              padding: const EdgeInsets.all(4),
+              padding: responsive.allPadding(4),
               decoration: const BoxDecoration(
                 color: AppTheme.primary,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.add, size: 18, color: Colors.white),
+              child: Icon(Icons.add, 
+                size: responsive.iconSize(18), 
+                color: Colors.white),
             ),
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),

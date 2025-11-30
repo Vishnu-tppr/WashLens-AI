@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -8,22 +7,22 @@ import '../models/wash_entry.dart';
 import '../models/user_settings.dart';
 import 'auth_error_handler.dart';
 
-/// Firebase service for cloud operations
+/// Firebase service for Auth and Storage operations only (NO Firestore - using Supabase + local storage)
 class FirebaseService {
   FirebaseAuth? _auth;
-  FirebaseFirestore? _firestore;
+  // FirebaseFirestore removed - we use Supabase for database and SharedPreferences for local settings
   FirebaseStorage? _storage;
   bool _isAvailable = false;
 
   FirebaseService() {
     try {
       _auth = FirebaseAuth.instance;
-      _firestore = FirebaseFirestore.instance;
       _storage = FirebaseStorage.instance;
       _isAvailable = true;
+      debugPrint(
+          '✅ FirebaseService initialized (Auth + Storage only, NO Firestore)');
     } catch (e) {
-      // Use debugPrint instead of print for Flutter
-      debugPrint('Firebase not initialized, running in offline mode: $e');
+      debugPrint('⚠️ Firebase not initialized, running in offline mode: $e');
       _isAvailable = false;
     }
   }
@@ -82,28 +81,50 @@ class FirebaseService {
     }
   }
 
+
+
   /// Sign in with Google (enhanced with error handling and retry logic)
   /// Now returns the User object directly
   Future<User?> signInWithGoogle() async {
     if (!_isAvailable || _auth == null) return null;
 
+    // Proceed directly to sign in with retry logic
     return AuthErrorHandler.executeWithRetry<User?>(
       () async {
+        // Initialize GoogleSignIn with proper scopes
+        final GoogleSignIn googleSignIn = GoogleSignIn(
+          scopes: ['email', 'profile'],
+        );
+
+        try {
+          // Sign out first to clear any stale session and force account picker
+          await googleSignIn.signOut();
+          debugPrint('🔄 Cleared previous Google Sign-In session');
+        } catch (e) {
+          debugPrint('⚠️ Sign-out before sign-in failed (expected): $e');
+        }
+
         // Trigger the authentication flow
-        final GoogleSignIn googleSignIn = GoogleSignIn();
+        debugPrint('📱 Initiating Google Sign-In...');
         final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
 
         if (googleUser == null) {
-          // User cancelled the sign-in
+          debugPrint('❌ User cancelled Google Sign-In');
           throw AuthError.userCancelled;
         }
 
+        debugPrint('✅ Google account selected: ${googleUser.email}');
+
         // Obtain the auth details from the request
-        final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+        final GoogleSignInAuthentication googleAuth =
+            await googleUser.authentication;
 
         if (googleAuth.idToken == null || googleAuth.accessToken == null) {
+          debugPrint('❌ Failed to get Google auth tokens');
           throw AuthError.googleSignInFailed;
         }
+
+        debugPrint('🔑 Google auth tokens obtained');
 
         // Create a new credential
         final credential = GoogleAuthProvider.credential(
@@ -111,9 +132,13 @@ class FirebaseService {
           idToken: googleAuth.idToken,
         );
 
+        debugPrint('🔐 Signing in to Firebase with Google credentials...');
+
         // Once signed in, return the User object
         final userCredential = await _auth!.signInWithCredential(credential);
-        debugPrint('Google sign-in successful for user: ${userCredential.user?.displayName}');
+        
+        debugPrint('✅ Google sign-in successful for user: ${userCredential.user?.displayName} (${userCredential.user?.email})');
+        
         return userCredential.user;
       },
     );
@@ -127,88 +152,77 @@ class FirebaseService {
     return await uploadTask.ref.getDownloadURL();
   }
 
-  /// Save wash entry to Firestore
+  // NOTE: All Firestore methods removed - we use Supabase for database operations
+  // These methods are no longer supported and will do nothing if called
+  @Deprecated('Use Supabase for database operations')
   Future<void> saveWashEntry(WashEntry entry) async {
-    if (!_isAvailable || _firestore == null) return;
-    await _firestore!
-        .collection('users')
-        .doc(entry.userId)
-        .collection('wash_entries')
-        .doc(entry.id)
-        .set(entry.toJson());
+    debugPrint(
+        '⚠️ saveWashEntry called but Firestore is disabled - use Supabase');
+    return;
   }
 
-  /// Get wash entries for user
+  @Deprecated('Use Supabase for database operations')
   Stream<List<WashEntry>> getWashEntriesStream(String userId) {
-    if (!_isAvailable || _firestore == null) {
-      return Stream.value([]);
-    }
-    return _firestore!
-        .collection('users')
-        .doc(userId)
-        .collection('wash_entries')
-        .orderBy('givenAt', descending: true)
-        .snapshots()
-        .map(
-          (snapshot) => snapshot.docs
-              .map((doc) => WashEntry.fromJson(doc.data()))
-              .toList(),
-        );
+    debugPrint(
+        '⚠️ getWashEntriesStream called but Firestore is disabled - use Supabase');
+    return Stream.value([]);
   }
 
-  /// Update wash entry
+  @Deprecated('Use Supabase for database operations')
   Future<void> updateWashEntry(WashEntry entry) async {
-    if (!_isAvailable || _firestore == null) return;
-    await _firestore!
-        .collection('users')
-        .doc(entry.userId)
-        .collection('wash_entries')
-        .doc(entry.id)
-        .update(entry.toJson());
+    debugPrint(
+        '⚠️ updateWashEntry called but Firestore is disabled - use Supabase');
+    return;
   }
 
-  /// Delete wash entry
+  @Deprecated('Use Supabase for database operations')
   Future<void> deleteWashEntry(String userId, String entryId) async {
-    if (!_isAvailable || _firestore == null) return;
-    await _firestore!
-        .collection('users')
-        .doc(userId)
-        .collection('wash_entries')
-        .doc(entryId)
-        .delete();
+    debugPrint(
+        '⚠️ deleteWashEntry called but Firestore is disabled - use Supabase');
+    return;
   }
 
-  /// Save user settings
+  // User settings methods - DISABLED (use LocalStorageService instead)
+  @Deprecated('Use LocalStorageService for user settings')
   Future<bool> saveUserSettings(UserSettings settings) async {
-    if (!_isAvailable || _firestore == null) return false;
-    try {
-      await _firestore!
-          .collection('users')
-          .doc(settings.userId)
-          .set(settings.toJson());
-      return true;
-    } catch (e) {
-      debugPrint('Error saving user settings: $e');
-      return false;
-    }
+    debugPrint(
+        '⚠️ saveUserSettings called but Firestore is disabled - use LocalStorageService');
+    return false;
   }
 
-  /// Get user settings
+  @Deprecated('Use LocalStorageService for user settings')
   Future<UserSettings?> getUserSettings(String userId) async {
-    if (!_isAvailable || _firestore == null) return null;
-    final doc = await _firestore!.collection('users').doc(userId).get();
-    if (!doc.exists) return null;
-    return UserSettings.fromJson(doc.data()!);
+    debugPrint(
+        '⚠️ getUserSettings called but Firestore is disabled - use LocalStorageService');
+    return null;
   }
 
-  /// Stream user settings
+  @Deprecated('Use LocalStorageService for user settings')
   Stream<UserSettings?> getUserSettingsStream(String userId) {
-    if (!_isAvailable || _firestore == null) {
-      return Stream.value(null);
-    }
-    return _firestore!.collection('users').doc(userId).snapshots().map((doc) {
-      if (!doc.exists) return null;
-      return UserSettings.fromJson(doc.data()!);
-    });
+    debugPrint(
+        '⚠️ getUserSettingsStream called but Firestore is disabled - use LocalStorageService');
+    return Stream.value(null);
+  }
+
+  // FCM token methods - DISABLED (tokens stored in local settings now)
+  @Deprecated('FCM tokens stored in LocalStorageService now')
+  Future<bool> saveFCMToken(String userId, String fcmToken) async {
+    debugPrint(
+        '⚠️ saveFCMToken called but Firestore is disabled - tokens in local settings');
+    return false;
+  }
+
+  @Deprecated('FCM tokens stored in LocalStorageService now')
+  Future<String?> getFCMToken(String userId) async {
+    debugPrint(
+        '⚠️ getFCMToken called but Firestore is disabled - tokens in local settings');
+    return null;
+  }
+
+  @Deprecated('FCM tokens stored in LocalStorageService now')
+  Future<bool> removeFCMToken(String userId) async {
+    debugPrint(
+        '⚠️ removeFCMToken called but Firestore is disabled - tokens in local settings');
+    return false;
   }
 }

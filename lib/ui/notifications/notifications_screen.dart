@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../services/notification_storage_service.dart';
+import '../../models/notification_item.dart';
+import '../theme/responsive_utils.dart';
 
 // Tailwind-style tokens
 class AppColors {
@@ -7,7 +10,7 @@ class AppColors {
   static const secondary = Color(0xFFA3B4FF);
   static const accent = Color(0xFF6EE7B7);
   static const cardLight = Color(0xFFFFFFFF);
-  static const bgLight = Color(0xFFF8FAFC);
+  static const bgLight = Color(0xFFFFFFFF);
   static const textPrimary = Color(0xFF0F172A);
   static const textSecondary = Color(0xFF475569);
   static const red500 = Color(0xFFEF4444);
@@ -17,87 +20,23 @@ class AppColors {
 
 List<BoxShadow> softShadow = [
   const BoxShadow(
-    color: Color(0x144A6FFF),
+    color: Color(0x0F000000),
     blurRadius: 20,
     spreadRadius: -4,
     offset: Offset(0, 8),
   ),
   const BoxShadow(
-    color: Color(0x10000000),
+    color: Color(0x08000000),
     blurRadius: 12,
     spreadRadius: -5,
     offset: Offset(0, 4),
   ),
 ];
 
-class NotificationItem {
-  final IconData icon;
-  final String title;
-  final String message;
-  final String time;
-  final Color fillColor;
-  final Color iconColor;
-  final bool highlightDot;
 
-  NotificationItem({
-    required this.icon,
-    required this.title,
-    required this.message,
-    required this.time,
-    required this.fillColor,
-    required this.iconColor,
-    this.highlightDot = false,
-  });
-}
 
-// Demo list - realistic laundry notifications
-final demoNotifications = [
-  NotificationItem(
-    icon: Icons.done_all_rounded,
-    title: "Laundry Ready for Pickup",
-    message: "Your wash containing 12 items is now ready at Anil Dhobi.",
-    time: "Just now",
-    fillColor: AppColors.accent.withOpacity(0.2),
-    iconColor: AppColors.accent,
-    highlightDot: true,
-  ),
-  NotificationItem(
-    icon: Icons.inventory_2_rounded,
-    title: "Wash Report Generated",
-    message: "Monthly wash summary for November sent to your email.",
-    time: "2 hours ago",
-    fillColor: AppColors.blue500.withOpacity(0.2),
-    iconColor: AppColors.blue500,
-    highlightDot: true,
-  ),
-  NotificationItem(
-    icon: Icons.error_outline_rounded,
-    title: "Failed to fetch items",
-    message: "Could not sync with the cloud. Please try again.",
-    time: "Yesterday",
-    fillColor: AppColors.red500.withOpacity(0.2),
-    iconColor: AppColors.red500,
-    highlightDot: false,
-  ),
-  NotificationItem(
-    icon: Icons.notifications_rounded,
-    title: "Reminder: Laundry returned",
-    message: "Don't forget to mark your items as returned.",
-    time: "Yesterday",
-    fillColor: AppColors.yellow500.withOpacity(0.2),
-    iconColor: AppColors.yellow500,
-    highlightDot: false,
-  ),
-  NotificationItem(
-    icon: Icons.task_alt_rounded,
-    title: "Process completed",
-    message: "Your laundry wash #1023 is complete.",
-    time: "2 days ago",
-    fillColor: AppColors.accent.withOpacity(0.2),
-    iconColor: AppColors.accent,
-    highlightDot: false,
-  ),
-];
+// Real notification system will be populated from local storage and FCM messages
+// This list will be replaced with actual notifications
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -108,81 +47,118 @@ class NotificationsScreen extends StatefulWidget {
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
   late List<NotificationItem> _notifications;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _notifications = List.from(demoNotifications);
+    _loadNotifications();
   }
 
-  void _clearAllNotifications() {
-    setState(() {
-      _notifications.clear();
-    });
+  Future<void> _loadNotifications() async {
+    setState(() => _isLoading = true);
 
-    // Show success message
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'All notifications cleared',
-          style: GoogleFonts.plusJakartaSans(color: Colors.white),
-        ),
-        backgroundColor: AppColors.primary,
-        duration: const Duration(seconds: 2),
-      ),
-    );
+    try {
+      final storedNotifications = await NotificationStorageService().getAllNotifications();
+      setState(() {
+        _notifications = storedNotifications;
+        _isLoading = false;
+      });
+    } catch (e) {
+      debugPrint('Error loading notifications: $e');
+      setState(() => _isLoading = false);
+    }
+  }
 
-    // Pass result back to home screen
-    Navigator.of(context).pop(true);
+  Future<void> _clearAllNotifications() async {
+    try {
+      await NotificationStorageService().clearAllNotifications();
+      await _loadNotifications();
+
+      // Show success message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'All notifications cleared',
+              style: GoogleFonts.plusJakartaSans(color: Colors.white),
+            ),
+            backgroundColor: AppColors.primary,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+
+        // Pass result back to home screen
+        Navigator.of(context).pop(true);
+      }
+    } catch (e) {
+      debugPrint('Error clearing notifications: $e');
+    }
+  }
+
+  Future<void> _markAsRead(NotificationItem notification) async {
+    try {
+      await NotificationStorageService().markAsRead(notification.id);
+      await _loadNotifications();
+    } catch (e) {
+      debugPrint('Error marking notification as read: $e');
+    }
+  }
+
+  // Add refresh capability
+  Future<void> _refreshNotifications() async {
+    await _loadNotifications();
   }
 
   @override
   Widget build(BuildContext context) {
+    final r = context.responsive;
     return Scaffold(
       backgroundColor: AppColors.bgLight,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    "Notifications",
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 28, // text-2xl
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: _notifications.isNotEmpty ? _clearAllNotifications : null,
-                    child: Text(
-                      "Clear All",
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: _notifications.isNotEmpty ? AppColors.primary : AppColors.textSecondary.withOpacity(0.5),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              Expanded(
-                child: _notifications.isEmpty
-                    ? const _EmptyNotificationsView()
-                    : ListView.separated(
-                        itemCount: _notifications.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 16),
-                        itemBuilder: (_, i) => _NotificationCard(item: _notifications[i]),
-                      ),
-              ),
-            ],
+      appBar: AppBar(
+        title: Text(
+          'Notifications',
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: r.fontSize(20, min: 18, max: 22),
+            fontWeight: FontWeight.w600,
           ),
+        ),
+        backgroundColor: AppColors.cardLight,
+        actions: [
+          TextButton(
+            onPressed: _notifications.isNotEmpty
+                ? _clearAllNotifications
+                : null,
+            child: Text(
+              "Clear All",
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: _notifications.isNotEmpty
+                    ? AppColors.primary
+                    : AppColors.textSecondary.withOpacity(0.5),
+              ),
+            ),
+          ),
+        ],
+      ),
+      body: Padding(
+        padding: r.padding(horizontal: 24, vertical: 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: _notifications.isEmpty
+                  ? const _EmptyNotificationsView()
+                  : ListView.separated(
+                      itemCount: _notifications.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 16),
+                      itemBuilder: (_, i) =>
+                          _NotificationCard(item: _notifications[i]),
+                    ),
+            ),
+          ],
         ),
       ),
     );
@@ -242,85 +218,115 @@ class _NotificationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: item.highlightDot
-            ? AppColors.primary.withOpacity(0.05)
-            : AppColors.cardLight,
-        borderRadius: BorderRadius.circular(22), // rounded-xl
-        boxShadow: softShadow,
-      ),
-      padding: const EdgeInsets.all(16), // p-4
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Leading blue dot for unread
-          Padding(
-            padding: const EdgeInsets.only(top: 9),
-            child: SizedBox(
-              width: 10,
-              child: item.highlightDot
-                  ? Container(
-                      width: 10,
-                      height: 10,
-                      decoration: BoxDecoration(
-                        color: AppColors.primary,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                    )
-                  : const SizedBox(width: 10),
+    final iconData = _getIconFromString(item.getIconData());
+    final iconColor = Color(item.getIconColor());
+    final bgColor = iconColor.withOpacity(0.1);
+
+    return InkWell(
+      onTap: item.isRead
+          ? null
+          : () => _markAsRead(context, item),
+      borderRadius: BorderRadius.circular(22),
+      child: Container(
+        decoration: BoxDecoration(
+          color: !item.isRead
+              ? const Color(0xFFF1F5F9)
+              : AppColors.cardLight,
+          borderRadius: BorderRadius.circular(22), // rounded-xl
+          boxShadow: softShadow,
+        ),
+        padding: const EdgeInsets.all(16), // p-4
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Leading blue dot for unread
+            Padding(
+              padding: const EdgeInsets.only(top: 9),
+              child: SizedBox(
+                width: 10,
+                child: !item.isRead
+                    ? Container(
+                        width: 10,
+                        height: 10,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                      )
+                    : const SizedBox(width: 10),
+              ),
             ),
-          ),
-          const SizedBox(width: 12),
-          // Icon circle
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: item.fillColor,
-              shape: BoxShape.circle,
+            const SizedBox(width: 12),
+            // Icon circle
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: bgColor,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(iconData, color: iconColor, size: 28),
             ),
-            child: Icon(item.icon, color: item.iconColor, size: 28),
-          ),
-          const SizedBox(width: 16),
-          // Texts
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.title,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 17,
-                    color: AppColors.textPrimary,
+            const SizedBox(width: 16),
+            // Texts
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.title,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 17,
+                      color: AppColors.textPrimary,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 1),
-                Text(
-                  item.message,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontWeight: FontWeight.w400,
-                    fontSize: 15,
-                    color: AppColors.textSecondary,
+                  const SizedBox(height: 1),
+                  Text(
+                    item.message,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontWeight: FontWeight.w400,
+                      fontSize: 15,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  item.time,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontWeight: FontWeight.w400,
-                    fontSize: 13,
-                    color: AppColors.textSecondary.withOpacity(0.7),
+                  const SizedBox(height: 5),
+                  Text(
+                    item.getFormattedTime(),
+                    style: GoogleFonts.plusJakartaSans(
+                      fontWeight: FontWeight.w400,
+                      fontSize: 13,
+                      color: AppColors.textSecondary.withOpacity(0.7),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
+  }
+
+  void _markAsRead(BuildContext context, NotificationItem notification) {
+    final state = context.findAncestorStateOfType<_NotificationsScreenState>();
+    state?._markAsRead(notification);
+  }
+
+  IconData _getIconFromString(String iconName) {
+    switch (iconName) {
+      case 'notifications':
+        return Icons.notifications;
+      case 'search':
+        return Icons.search;
+      case 'schedule':
+        return Icons.schedule;
+      case 'check_circle':
+        return Icons.check_circle;
+      default:
+        return Icons.notifications;
+    }
   }
 }

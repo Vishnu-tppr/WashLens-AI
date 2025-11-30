@@ -52,18 +52,18 @@ class ClothDetector {
       throw Exception('Failed to decode image');
     }
 
-    return await detectFromImage(image);
+    return await detectClothes(image);
   }
 
   /// Detect clothes from Image object
-  Future<DetectionResult> detectFromImage(img.Image image) async {
+  Future<DetectionResult> detectClothes(img.Image image) async {
     if (!_isInitialized) await initialize();
-
-    final startTime = DateTime.now();
 
     // Demo mode (TFLite disabled)
     return _demoDetection(image);
 
+    // TODO: Uncomment when TFLite is ready
+    /*
     // Preprocess image
     final input = _preprocessImage(image);
 
@@ -96,6 +96,7 @@ class ClothDetector {
       imageWidth: image.width,
       imageHeight: image.height,
     );
+    */
   }
 
   /// Demo detection when no model is available
@@ -154,6 +155,7 @@ class ClothDetector {
   }
 
   /// Preprocess image for model input
+  // ignore: unused_element
   Float32List _preprocessImage(img.Image image) {
     // Resize image to 640x640
     final resized = img.copyResize(
@@ -180,6 +182,7 @@ class ClothDetector {
   }
 
   /// Run TFLite inference (temporarily disabled)
+  // ignore: unused_element
   List<List<double>> _runInference(Float32List input) {
     // TFLite temporarily disabled
     return [];
@@ -209,6 +212,7 @@ class ClothDetector {
   }
 
   /// Post-process model output
+  // ignore: unused_element
   List<ClothItem> _postProcess(
     List<List<double>> output,
     int originalWidth,
@@ -266,6 +270,7 @@ class ClothDetector {
   }
 
   /// Apply Non-Maximum Suppression
+  // ignore: unused_element
   List<ClothItem> _applyNMS(List<ClothItem> detections) {
     // Sort by confidence descending
     detections.sort((a, b) => b.confidence.compareTo(a.confidence));
@@ -306,6 +311,7 @@ class ClothDetector {
   }
 
   /// Group detections by category and count
+  // ignore: unused_element
   Map<String, int> _groupAndCount(List<ClothItem> detections) {
     final counts = <String, int>{};
     for (final detection in detections) {
@@ -315,6 +321,7 @@ class ClothDetector {
   }
 
   /// Extract dominant colors and patterns from detected regions
+  // ignore: unused_element
   Future<Map<String, List<String>>> _extractColorsAndPatterns(
     img.Image image,
     List<ClothItem> detections,

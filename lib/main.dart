@@ -5,6 +5,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'ui/settings/settings_screen.dart';
+import 'ui/settings/notification_settings_screen.dart';
 import 'ui/splash/splash_screen.dart';
 import 'ui/onboarding/welcome_screen.dart';
 import 'ui/auth/login_screen.dart';
@@ -17,13 +18,16 @@ import 'ui/history/history_screen.dart';
 import 'ui/analytics/analytics_screen.dart';
 import 'ui/settings/edit_profile_screen.dart';
 import 'ui/categories/manage_categories_screen.dart';
+import 'ui/laundry/mark_returned_screen.dart';
 import 'ui/laundry/my_laundry_screen.dart';
 import 'ui/laundry/new_laundry_entry_screen.dart';
+import 'ui/laundry/quick_add_laundry_screen.dart';
 import 'ui/laundry/wash_entry_summary_screen.dart';
 import 'ui/laundry/laundry_return_summary_screen.dart';
+import 'ui/laundry/confirm_manual_return_screen.dart';
 import 'ui/notifications/notifications_screen.dart';
-import 'services/firebase_service.dart';
-import 'services/notification_service_simple.dart';
+import 'services/notification_service_enhanced.dart';
+import 'services/notification_timer_service.dart';
 import 'services/supabase_service.dart';
 import 'ml/detector.dart';
 import 'providers/user_provider.dart';
@@ -37,11 +41,13 @@ void main() async {
   // Initialize Supabase (add your credentials in supabase_service.dart)
   await SupabaseService.initialize();
 
-  // Initialize Firebase (optional - for FCM notifications)
+  // Initialize Firebase (for FCM notifications, Auth, and Storage only - NO Firestore)
   try {
     await Firebase.initializeApp();
+    debugPrint(
+        '✅ Firebase initialized (Auth + Storage + FCM only, NO Firestore)');
   } catch (e) {
-    debugPrint('Firebase initialization skipped: $e');
+    debugPrint('⚠️ Firebase initialization: $e');
   }
 
   // Set preferred orientations
@@ -52,15 +58,18 @@ void main() async {
 
   // Initialize services (no local database - using Supabase API)
   final detector = ClothDetector();
-  final notificationService = NotificationService();
+  final notificationService = NotificationServiceEnhanced();
+  final timerService = NotificationTimerService();
   final userProvider = UserProvider();
 
   // Initialize notification service with error handling
   try {
     await notificationService.initialize();
-    print('NotificationService initialized successfully');
+    await timerService.initialize(notificationService);
+    debugPrint(
+        '✅ NotificationServiceEnhanced and TimerService initialized successfully');
   } catch (e) {
-    print('NotificationService initialization failed: $e');
+    debugPrint('❌ NotificationServiceEnhanced initialization failed: $e');
     // Continue anyway - app can work without notifications
   }
 
@@ -92,7 +101,7 @@ const BorderRadius kBorderRadius2Xl = BorderRadius.all(Radius.circular(28.0));
 
 class WashLensApp extends StatelessWidget {
   final ClothDetector detector;
-  final NotificationService notificationService;
+  final NotificationServiceEnhanced notificationService;
   final UserProvider userProvider;
 
   const WashLensApp({
@@ -141,8 +150,9 @@ class WashLensApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         Provider<ClothDetector>.value(value: detector),
-        Provider<NotificationService>.value(value: notificationService),
-        Provider<FirebaseService>(create: (_) => FirebaseService()),
+        Provider<NotificationServiceEnhanced>.value(value: notificationService),
+        // FirebaseService removed - we only use Firebase for Auth/Storage, not Firestore
+        // Provider<FirebaseService>(create: (_) => FirebaseService()),
         ChangeNotifierProvider<UserProvider>.value(value: userProvider),
         // Supabase service is static - use SupabaseService.method() directly
       ],
@@ -160,6 +170,7 @@ class WashLensApp extends StatelessWidget {
           '/scan': (context) => const ScanScreen(),
           '/camera-scan': (context) => const CameraScanScreen(),
           '/detection-summary': (context) => const DetectionSummaryScreen(),
+          '/quick-add': (context) => const QuickAddLaundryScreen(),
           '/new-entry': (context) => const NewLaundryEntryScreen(),
           '/wash-summary': (context) => const WashEntrySummaryScreen(),
           '/return-summary': (context) => const LaundryReturnSummaryScreen(),
@@ -170,6 +181,11 @@ class WashLensApp extends StatelessWidget {
           '/notifications': (context) => const NotificationsScreen(),
           '/edit-profile': (context) => const EditProfileScreen(),
           '/categories': (context) => const ManageCategoriesScreen(),
+          '/mark_returned': (context) => const MarkReturnedScreen(),
+          '/notification-settings': (context) =>
+              const NotificationSettingsScreen(),
+          '/confirm_manual_return': (context) =>
+              const ConfirmManualReturnScreen(),
         },
         onUnknownRoute: (settings) {
           return MaterialPageRoute(

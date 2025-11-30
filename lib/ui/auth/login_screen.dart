@@ -220,7 +220,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.error_outline, color: Colors.red, size: 20),
+                      const Icon(Icons.error_outline,
+                          color: Colors.red, size: 20),
                       SizedBox(width: screenWidth * 0.02),
                       Expanded(
                         child: Text(
@@ -244,7 +245,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   onPressed: _isLoading ? null : _handleEmailLogin,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.primary,
-                    padding: EdgeInsets.symmetric(vertical: screenHeight * 0.016),
+                    padding:
+                        EdgeInsets.symmetric(vertical: screenHeight * 0.016),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(screenWidth * 0.08),
                     ),
@@ -256,7 +258,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           width: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
                           ),
                         )
                       : Text(
@@ -299,8 +302,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   style: OutlinedButton.styleFrom(
-                    padding: EdgeInsets.symmetric(vertical: screenHeight * 0.014),
-                    side: const BorderSide(color: Color(0xFFE2E8F0), width: 1.5),
+                    padding:
+                        EdgeInsets.symmetric(vertical: screenHeight * 0.014),
+                    side:
+                        const BorderSide(color: Color(0xFFE2E8F0), width: 1.5),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(screenWidth * 0.08),
                     ),
@@ -373,8 +378,9 @@ class _LoginScreenState extends State<LoginScreen> {
       if (SupabaseService.isAvailable) {
         final user = await SupabaseService.signInWithPassword(email, password);
         if (user != null && mounted) {
-          final userProvider = Provider.of<UserProvider>(context, listen: false);
-          userProvider.setCurrentSupabaseUser(user);
+          final userProvider =
+              Provider.of<UserProvider>(context, listen: false);
+          await userProvider.setCurrentSupabaseUser(user);
           Navigator.pushReplacementNamed(context, '/home');
           return;
         }
@@ -383,7 +389,8 @@ class _LoginScreenState extends State<LoginScreen> {
       // Fallback to Firebase
       final firebaseService = FirebaseService();
       if (firebaseService.isAvailable) {
-        final credential = await firebaseService.signInWithEmailPassword(email, password);
+        final credential =
+            await firebaseService.signInWithEmailPassword(email, password);
         if (credential != null && mounted) {
           Navigator.pushReplacementNamed(context, '/home');
           return;
@@ -412,10 +419,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       final firebaseService = FirebaseService();
-      
+
       if (!firebaseService.isAvailable) {
         setState(() {
-          _errorMessage = 'Firebase is not configured. Please use email/password login.';
+          _errorMessage =
+              'Firebase is not configured. Please use email/password login.';
           _isLoading = false;
         });
         return;
@@ -433,18 +441,20 @@ class _LoginScreenState extends State<LoginScreen> {
       }
 
       if (mounted) {
-        debugPrint('Google sign-in successful: ${firebaseUser.displayName} (${firebaseUser.email})');
+        debugPrint(
+            'Google sign-in successful: ${firebaseUser.displayName} (${firebaseUser.email})');
 
-        // Set Firebase user in provider
+        // Set Firebase user in provider and await to ensure settings load immediately
         final userProvider = Provider.of<UserProvider>(context, listen: false);
-        userProvider.setCurrentFirebaseUser(firebaseUser);
+        await userProvider.setCurrentFirebaseUser(firebaseUser);
 
         // Try to sync with Supabase (optional - create or link account)
         if (SupabaseService.isAvailable && firebaseUser.email != null) {
           try {
             // This is a temporary solution - in production you'd want a better OAuth flow
             // For now, just continue with Firebase-only authentication
-            debugPrint('Firebase user authenticated, using Firebase auth storage');
+            debugPrint(
+                'Firebase user authenticated, using Firebase auth storage');
           } catch (e) {
             debugPrint('Supabase sync skipped: $e');
           }
@@ -462,12 +472,16 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (e) {
       debugPrint('Google Sign-In error: $e');
       setState(() {
-        if (e.toString().contains('CANCELLED') || e.toString().contains('cancelled')) {
+        if (e.toString().contains('CANCELLED') ||
+            e.toString().contains('cancelled')) {
           _errorMessage = 'Sign-in was cancelled';
-        } else if (e.toString().contains('network') || e.toString().contains('NETWORK')) {
-          _errorMessage = 'Network error. Please check your internet connection.';
+        } else if (e.toString().contains('network') ||
+            e.toString().contains('NETWORK')) {
+          _errorMessage =
+              'Network error. Please check your internet connection.';
         } else if (e.toString().contains('PlatformException')) {
-          _errorMessage = 'Google Sign-In is not properly configured. Please contact support or use email/password login.';
+          _errorMessage =
+              'Google Sign-In is not properly configured. Please contact support or use email/password login.';
         } else {
           _errorMessage = 'Google Sign-In failed: ${_parseError(e.toString())}';
         }
@@ -508,7 +522,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 final email = controller.text.trim();
                 if (email.isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Please enter an email address')),
+                    const SnackBar(
+                        content: Text('Please enter an email address')),
                   );
                   return;
                 }
@@ -519,7 +534,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('Password reset link sent! Check your email.'),
+                        content:
+                            Text('Password reset link sent! Check your email.'),
                         backgroundColor: Colors.green,
                       ),
                     );

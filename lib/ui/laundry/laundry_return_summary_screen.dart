@@ -6,10 +6,12 @@ class LaundryReturnSummaryScreen extends StatefulWidget {
   const LaundryReturnSummaryScreen({super.key});
 
   @override
-  State<LaundryReturnSummaryScreen> createState() => _LaundryReturnSummaryScreenState();
+  State<LaundryReturnSummaryScreen> createState() =>
+      _LaundryReturnSummaryScreenState();
 }
 
-class _LaundryReturnSummaryScreenState extends State<LaundryReturnSummaryScreen> {
+class _LaundryReturnSummaryScreenState
+    extends State<LaundryReturnSummaryScreen> {
   final List<Map<String, dynamic>> _comparisonItems = [
     {
       'name': 'T-Shirts',
@@ -146,7 +148,8 @@ class _LaundryReturnSummaryScreenState extends State<LaundryReturnSummaryScreen>
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.primary,
                     foregroundColor: Colors.white,
-                    padding: EdgeInsets.symmetric(vertical: screenHeight * 0.02),
+                    padding:
+                        EdgeInsets.symmetric(vertical: screenHeight * 0.02),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(24),
                     ),
@@ -173,7 +176,8 @@ class _LaundryReturnSummaryScreenState extends State<LaundryReturnSummaryScreen>
                   },
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppTheme.primary,
-                    padding: EdgeInsets.symmetric(vertical: screenHeight * 0.02),
+                    padding:
+                        EdgeInsets.symmetric(vertical: screenHeight * 0.02),
                     side: const BorderSide(color: AppTheme.primary, width: 2),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(24),
@@ -198,7 +202,8 @@ class _LaundryReturnSummaryScreenState extends State<LaundryReturnSummaryScreen>
                   onPressed: () {
                     // Export proof
                   },
-                  icon: const Icon(Icons.ios_share, color: AppTheme.textSecondary),
+                  icon: const Icon(Icons.ios_share,
+                      color: AppTheme.textSecondary),
                   label: Text(
                     'Export Proof',
                     style: TextStyle(
@@ -208,7 +213,8 @@ class _LaundryReturnSummaryScreenState extends State<LaundryReturnSummaryScreen>
                     ),
                   ),
                   style: TextButton.styleFrom(
-                    padding: EdgeInsets.symmetric(vertical: screenHeight * 0.02),
+                    padding:
+                        EdgeInsets.symmetric(vertical: screenHeight * 0.02),
                     backgroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(24),
@@ -297,8 +303,11 @@ class _LaundryReturnSummaryScreenState extends State<LaundryReturnSummaryScreen>
                 children: [
                   Icon(
                     statusIcon,
-                    color: status == 'missing' ? Colors.red : 
-                           status == 'extra' ? Colors.orange : AppTheme.accent,
+                    color: status == 'missing'
+                        ? Colors.red
+                        : status == 'extra'
+                            ? Colors.orange
+                            : AppTheme.accent,
                     size: 20,
                   ),
                   SizedBox(width: screenWidth * 0.015),
@@ -316,8 +325,11 @@ class _LaundryReturnSummaryScreenState extends State<LaundryReturnSummaryScreen>
                       style: TextStyle(
                         fontSize: screenWidth * 0.032,
                         fontWeight: FontWeight.w600,
-                        color: status == 'missing' ? Colors.red.shade700 :
-                               status == 'extra' ? Colors.orange.shade700 : AppTheme.accent,
+                        color: status == 'missing'
+                            ? Colors.red.shade700
+                            : status == 'extra'
+                                ? Colors.orange.shade700
+                                : AppTheme.accent,
                       ),
                     ),
                   ),

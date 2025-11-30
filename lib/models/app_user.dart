@@ -15,6 +15,9 @@ class FirebaseAuthUser implements AuthUser {
 
   FirebaseAuthUser(this._user);
 
+  /// Get the underlying Firebase User object
+  firebase_auth.User get user => _user;
+
   @override
   String get id => _user.uid;
 
@@ -24,8 +27,14 @@ class FirebaseAuthUser implements AuthUser {
   @override
   String? get displayName => _user.displayName;
 
+  /// Get the user's photo URL (from Google Sign-In)
+  String? get photoURL => _user.photoURL;
+
   @override
-  Map<String, dynamic>? get metadata => null; // Firebase doesn't have userMetadata like Supabase
+  Map<String, dynamic>? get metadata => {
+    'avatar_url': _user.photoURL,
+    'full_name': _user.displayName,
+  };
 }
 
 /// Supabase User wrapper implementing AuthUser interface
