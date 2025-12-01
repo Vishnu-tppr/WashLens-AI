@@ -1,28 +1,118 @@
-# 🧺 WashLens AI
+# 🧺 WashLens AI 📸🧠
 
-**Smart Laundry Tracking with AI-Powered Cloth Detection**
+> 🎯 A next‑gen AI-powered Flutter app that automatically detects, counts, and tracks your laundry.
+>
+> 📸 Snap a photo → 🧠 AI identifies items → 🔄 Track Given vs Returned → ⚠️ Get missing‑item alerts.
 
-WashLens AI is a Flutter mobile app designed for hostel students to automatically track laundry items using computer vision. Simply snap a photo of your laundry pile, and the app will detect and count every item. When clothes return from the dhobi, verify them instantly and get notified of any missing items.
+---
+
+## 📌 Table of Contents
+
+* [✨ Features](#-features)
+* [📸 Demo Screenshots](#-demo-screenshots)
+* [🧠 How It Works](#-how-it-works)
+* [🏗️ Architecture](#️-architecture)
+* [📁 Project Structure](#-project-structure)
+* [⚙️ Requirements](#️-requirements)
+* [🚀 Getting Started](#-getting-started)
+* [🤖 TFLite Model Setup](#-tflite-model-setup)
+* [▶️ Run the App](#️-run-the-app)
+* [🧪 Testing](#-testing)
+* [📱 Build for Production](#-build-for-production)
+* [🧩 Technologies Used](#-technologies-used)
+* [👨🏻‍💻 Author](#-author)
+* [📜 License](#-license)
 
 ---
 
 ## ✨ Features
 
-- **🤖 AI Cloth Detection** – Single-photo auto-counting of shirts, t-shirts, pants, towels, socks, etc.
-- **📸 Camera Scanning** – Integrated camera with on-device TFLite inference
-- **🔄 Return Verification** – Automatic matching: Given vs Returned
-- **⚠️ Missing Item Alerts** – Real-time notifications for missing clothes
-- **📊 Analytics Dashboard** – Track laundry history, dhobi risk scores, most-missing items
-- **💾 Offline-First** – Works without internet; syncs when online
-- **☁️ Cloud Backup** – Firebase-powered secure backup
-- **📤 PDF Export** – Generate proof with photos and share via WhatsApp
-- **🏠 Home Widgets** – Quick stats on Android & iOS home screens
-- **🔔 Smart Reminders** – 3-day alerts for pending returns
-- **🎨 Animated Splash** – Beautiful Rive-powered intro animation
+* 🤖 **AI Cloth Detection** – Shirts, t‑shirts, pants, shorts, towels, socks, bedsheets & more.
+* 📸 **Camera Scanner** – On‑device TFLite model for fast offline detection.
+* 🔄 **Return Verification** – Compare *Given vs Returned* instantly.
+* ⚠️ **Missing Item Alerts** – Alerts for clothes not returned.
+* 📊 **Analytics Dashboard** – Dhobi reliability, monthly stats, missing trends.
+* 🕒 **Smart 3‑Day Reminders** – Auto reminders for unreturned laundry.
+* 💾 **Offline‑First** – Works without internet.
+* ☁️ **Cloud Backup** – Firebase Firestore + Storage sync.
+* 🏷️ **Custom Categories** – Add/edit your own cloth types.
+* 📤 **PDF / WhatsApp Export** – Proof with images & counts.
+* 🎨 **Rive Animated Splash** – Clean motion intro.
+* 🏠 **Home Widgets** – Android + iOS quick‑view widgets.
+
+---
+
+## 📸 Demo Screenshots
+
+*(add your images here)*
+
+```
+/screenshots
+ ├── splash.png
+ ├── home.png
+ ├── detection.png
+ ├── summary.png
+ └── history.png
+```
+
+---
+
+## 🧠 How It Works
+
+### 1️⃣ Image → AI Detection
+
+The app uses a quantized **YOLOv8 → TFLite** model to detect cloth items.
+
+### 2️⃣ Count Extraction
+
+Detections are grouped by class:
+
+```
+6 shirts
+3 t‑shirts
+1 towel
+1 track pant
+```
+
+### 3️⃣ Save Wash Logs
+
+Stored with:
+
+* Date/time
+* Dhobi name
+* Detected counts
+* Images
+* Notes
+
+### 4️⃣ Return Comparison
+
+You capture the return photo → AI detects again → App compares both.
+
+```
+❌ Missing: 1 shirt, 1 towel
+```
+
+### 5️⃣ PDF/WhatsApp Export
+
+Generates proof with before/after photos.
 
 ---
 
 ## 🏗️ Architecture
+
+```
+WashLens AI
+ ├── Flutter Mobile UI
+ ├── On‑Device ML (TFLite / YOLOv8)
+ ├── Firebase Auth + Firestore + Storage
+ ├── Offline SQLite Cache
+ ├── Cloud Functions (Risk Analysis, Exports)
+ └── Platform Integrations (Widgets, Notifications)
+```
+
+---
+
+## 📁 Project Structure
 
 ```
 lib/
@@ -30,8 +120,8 @@ lib/
 ├── ui/
 │   ├── splash/
 │   ├── home/
-│   ├── wash_entry/
 │   ├── camera/
+│   ├── wash_entry/
 │   ├── return_verification/
 │   ├── history/
 │   ├── analytics/
@@ -47,13 +137,8 @@ lib/
 │   ├── detector.dart
 │   ├── color_classifier.dart
 │   └── pattern_classifier.dart
-├── models/
-│   ├── wash_entry.dart
-│   ├── cloth_item.dart
-│   ├── category.dart
-│   └── user_settings.dart
 ├── data/
-│   ├── database.dart (Drift)
+│   ├── database.dart
 │   ├── firestore_repo.dart
 │   └── storage_repo.dart
 └── native_integration/
@@ -64,164 +149,93 @@ lib/
 
 ---
 
+## ⚙️ Requirements
+
+* Flutter SDK ≥ 3.0.0
+* Android Studio / Xcode
+* Firebase account
+* Python (for model training)
+* Git
+
+---
+
 ## 🚀 Getting Started
 
-### Prerequisites
-
-- Flutter SDK (>=3.0.0)
-- Android Studio / Xcode
-- Firebase Account
-- Git
-
-### 1. Clone Repository
+### 1️⃣ Clone Repo
 
 ```bash
 git clone https://github.com/yourusername/washlens_ai.git
 cd washlens_ai
 ```
 
-### 2. Install Dependencies
+### 2️⃣ Install Dependencies
 
 ```bash
 flutter pub get
 ```
 
-### 3. Firebase Setup
+### 3️⃣ Add Firebase Files
 
-#### Create Firebase Project
+```
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+```
 
-1. Go to [Firebase Console](https://console.firebase.google.com/)
-2. Create a new project: `washlens-ai`
-3. Enable:
-   - Authentication (Email/Password + Google Sign-In)
-   - Cloud Firestore
-   - Firebase Storage
-   - Firebase Cloud Messaging
-
-#### Android Configuration
-
-1. Register Android app in Firebase Console
-   - Package name: `com.washlens.ai`
-2. Download `google-services.json`
-3. Place in: `android/app/google-services.json`
-
-#### iOS Configuration
-
-1. Register iOS app in Firebase Console
-   - Bundle ID: `com.washlens.ai`
-2. Download `GoogleService-Info.plist`
-3. Place in: `ios/Runner/GoogleService-Info.plist`
-
-#### Firestore Security Rules
-
-Deploy rules from `firestore.rules`:
+### 4️⃣ Deploy Rules
 
 ```bash
 firebase deploy --only firestore:rules
-```
-
-#### Storage Security Rules
-
-Deploy rules from `storage.rules`:
-
-```bash
 firebase deploy --only storage
 ```
 
-### 4. Environment Variables
+---
+
+## 🤖 TFLite Model Setup
+
+### Train YOLOv8 & Convert to TFLite
 
 ```bash
-cp .env.example .env
-# Edit .env with your Firebase config values
-```
-
-### 5. iOS App Group Setup (for Widget)
-
-1. Open `ios/Runner.xcworkspace` in Xcode
-2. Select Runner target → Signing & Capabilities
-3. Add **App Groups** capability
-4. Enable: `group.com.washlens.ai`
-5. Repeat for **WidgetExtension** target
-
-### 6. TFLite Model Setup
-
-**Option A: Use Placeholder (for development)**
-
-A dummy model is included at `assets/models/dummy_washlens.tflite`
-
-**Option B: Train & Convert Real Model**
-
-See [ML Model Training Guide](docs/ML_TRAINING.md)
-
-Quick steps:
-
-```bash
-# Install dependencies
 pip install ultralytics onnx tensorflow
 
-# Train YOLOv8 Nano
 yolo detect train data=laundry_dataset.yaml model=yolov8n.pt epochs=100
-
-# Export to TFLite
 yolo export model=runs/detect/train/weights/best.pt format=tflite int8
-
-# Copy to assets
-cp best_int8.tflite assets/models/washlens_yolo.tflite
 ```
 
-### 7. Run the App
+Copy the file to:
 
-#### Android
+```
+assets/models/washlens_yolo.tflite
+```
+
+---
+
+## ▶️ Run the App
+
+### Android
 
 ```bash
 flutter run
 ```
 
-#### iOS
+### iOS
 
 ```bash
-cd ios
-pod install
-cd ..
+cd ios && pod install && cd ..
 flutter run
-```
-
-#### Run with Hot Reload
-
-```bash
-flutter run --hot
 ```
 
 ---
 
 ## 🧪 Testing
 
-### Unit Tests
-
 ```bash
 flutter test
 ```
 
-### Widget Tests
-
-```bash
-flutter test test/ui/
-```
-
-### Integration Tests
-
-```bash
-flutter drive \
-  --driver=test_driver/integration_test.dart \
-  --target=integration_test/app_test.dart
-```
-
-### Test Coverage
+### Coverage
 
 ```bash
 flutter test --coverage
-genhtml coverage/lcov.info -o coverage/html
-open coverage/html/index.html
 ```
 
 ---
@@ -234,201 +248,63 @@ open coverage/html/index.html
 flutter build apk --release
 ```
 
-Output: `build/app/outputs/flutter-apk/app-release.apk`
-
-### Android App Bundle (for Play Store)
+### Android App Bundle
 
 ```bash
 flutter build appbundle --release
 ```
 
-Output: `build/app/outputs/bundle/release/app-release.aab`
-
-### iOS IPA
+### iOS Release Build
 
 ```bash
 flutter build ios --release
-cd ios
-fastlane beta  # Upload to TestFlight
 ```
 
 ---
 
-## 🤖 ML Model Details
+## 📤 Export & Sharing
 
-### Model Architecture
+PDF generation uses `pdf` & `printing` package.
+Share via WhatsApp using system share sheet.
 
-- **Base**: YOLOv8 Nano
-- **Input**: 640x640 RGB
-- **Output**: Bounding boxes + class predictions
-- **Classes**: 8 categories (shirt, t-shirt, pants, shorts, track_pant, towel, socks, bedsheet)
-- **Quantization**: INT8 for mobile efficiency
-
-### Inference Pipeline
-
-1. Image preprocessing (resize, normalize)
-2. TFLite inference
-3. Non-Maximum Suppression (NMS)
-4. Category grouping
-5. Color/pattern detection (secondary classifier)
-
-### Performance
-
-- **Latency**: ~150-300ms on mid-range Android devices
-- **Accuracy**: 92% mAP@0.5
-- **Model Size**: ~6MB (quantized)
-
----
-
-## 🏠 Home Widget Setup
-
-### Android
-
-Uses `home_widget` Flutter plugin + native AppWidget.
-
-**Update Widget from Flutter:**
+**Example:**
 
 ```dart
-HomeWidget.saveWidgetData<String>('summary', 'Dhobi - 15 items');
-HomeWidget.updateWidget(
-  name: 'WashLensWidgetProvider',
-  androidName: 'WashLensWidgetProvider',
-);
-```
-
-**Widget Layout:** `android/app/src/main/res/layout/widget_layout.xml`
-
-### iOS
-
-Uses WidgetKit extension with App Group data sharing.
-
-**Update Widget from Flutter:**
-
-```dart
-await WidgetBridge.updateWidget({
-  'summary': 'Raju Dhobi - 15 items',
-  'missing': 1,
-  'lastUpdate': DateTime.now().toIso8601String(),
-});
-```
-
-**Widget Extension:** `ios/WidgetExtension/`
-
----
-
-## 🔔 Notifications
-
-### Local Notifications
-
-- Reminder after 3 days (configurable)
-- Missing item alerts
-- Return confirmation
-
-### Push Notifications (FCM)
-
-- Server-triggered reminders
-- Risk score alerts
-- Promotional messages
-
-**Handle Notification Tap:**
-
-```dart
-FirebaseMessaging.onMessageOpenedApp.listen((message) {
-  Navigator.pushNamed(context, '/wash-entry/${message.data['washId']}');
-});
+await Share.shareXFiles([pdfFile], text: 'Laundry Summary');
 ```
 
 ---
 
-## 🔧 Configuration
-
-Edit `.env` or app settings:
-
-| Setting | Default | Description |
-|---------|---------|-------------|
-| `DEFAULT_REMINDER_DAYS` | 3 | Days before reminder |
-| `ENABLE_CLOUD_BACKUP` | true | Auto Firebase sync |
-| `ENABLE_OFFLINE_MODE` | true | Work without internet |
-| `TFLITE_MODEL_PATH` | `assets/models/washlens_yolo.tflite` | Path to model |
 
 ---
 
-## 📂 Project Structure
+## 🧩 Technologies Used
 
-```
-washlens_ai/
-├── android/              # Android-specific code
-├── ios/                  # iOS-specific code
-│   └── WidgetExtension/  # iOS Widget
-├── lib/                  # Dart application code
-├── assets/               # Images, models, animations
-├── test/                 # Unit & widget tests
-├── integration_test/     # E2E tests
-├── docs/                 # Documentation
-├── design/               # Design files (Figma, Rive)
-├── samples/              # Sample images for demo
-├── tools/                # Scripts (model conversion, etc.)
-├── .github/workflows/    # CI/CD pipelines
-└── fastlane/             # iOS/Android deployment automation
-```
+* Flutter (Dart)
+* Firebase
+* TensorFlow Lite
+* YOLOv8
+* SQLite / Drift
+* Rive
+* Share Plus / PDF package
 
 ---
 
-## 🚢 CI/CD
+## 👨🏻‍💻 Author
 
-### GitHub Actions
+Made with ❤️ by [**Vishnu**](https://www.linkedin.com/in/vishnu-v-31583b327/)
 
-Workflows in `.github/workflows/`:
-
-- **ci.yml**: Lint, test, build on every PR
-- **release.yml**: Build & deploy on tag push
-
-### Fastlane
-
-#### Android
-
-```bash
-cd android
-fastlane beta  # Upload to Play Store Beta track
-```
-
-#### iOS
-
-```bash
-cd ios
-fastlane beta  # Upload to TestFlight
-```
+> "Solving my pain points" ⚡
 
 ---
 
-## 🤝 Contributing
+## 📜 License
 
-See [CONTRIBUTING.md](CONTRIBUTING.md)
-
----
-
-## 📄 License
-
-MIT License - see [LICENSE](LICENSE)
+MIT License © 2025 WashLens AI
 
 ---
 
-## 🙋 Support
+## ⭐ Support This Project
 
-- **Issues**: [GitHub Issues](https://github.com/yourusername/washlens_ai/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/washlens_ai/discussions)
-- **Email**: support@washlens.ai
+If you like this project, please **star ⭐ the repository** — it helps more people discover WashLens AI!
 
----
-
-## 🎉 Acknowledgments
-
-- Flutter Team
-- TensorFlow Lite Team
-- Ultralytics (YOLOv8)
-- Firebase Team
-- Rive Animations
-
----
-
-Built with ❤️ by students, for students
