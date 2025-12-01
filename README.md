@@ -1,7 +1,4 @@
-# 🧺 WashLens AI 📸🧠 [<img align="center" alt="Chill gif" src="https://raw.githubusercontent.com/Vishnu-tppr/Vishnu-cse/main/Untitled%20gif%20-%20Made%20with%20Clipchamp.gif" width="100" height="100" />](https://github.com/Vishnu-tppr?tab=repositories)
-
-
-
+# 🧺 WashLens AI 📸🧠[<img align="center" alt="Chill gif" src="https://raw.githubusercontent.com/Vishnu-tppr/Vishnu-cse/main/Untitled%20gif%20-%20Made%20with%20Clipchamp.gif" width="100" height="100" />](https://github.com/Vishnu-tppr?tab=repositories)
 
 > 🎯 A next‑gen AI-powered Flutter app that automatically detects, counts, and tracks your laundry.
 >
@@ -47,19 +44,18 @@
 
 ## 📸 Demo Screenshots
 
-<img src="https://github.com/user-attachments/assets/92c44ef6-e2cd-4345-8015-a6a6d29c9353" width="300">
-<img src="https://github.com/user-attachments/assets/0d4b5184-41b6-4dd1-879f-2cf704ee47df" width="300">
-<img src="https://github.com/user-attachments/assets/95c01160-9070-4e1d-9d50-11e7471115cc" width="300">
-<img src="https://github.com/user-attachments/assets/41e7348e-7b5b-419d-9fc9-567c125773b2" width="300">
-<img src="https://github.com/user-attachments/assets/7653abb2-3bb6-4097-bffb-6bb378738f1c" width="300">
-<img src="https://github.com/user-attachments/assets/3e09b5c5-ae4a-4278-bc71-8cfd5c21e4c3" width="300">
-<img src="https://github.com/user-attachments/assets/4de19ff1-ad23-476d-a715-332152c40091" width="300">
-<img src="https://github.com/user-attachments/assets/57291ce0-522f-4761-bb8e-9b84e04d0f43" width="300">
-<img src="https://github.com/user-attachments/assets/7e041612-70a5-426f-9243-3ae914602ef5" width="300">
-<img src="https://github.com/user-attachments/assets/01fc00cb-ce6b-411f-b1fa-ed896473361c" width="300">
-
-
-```
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/92c44ef6-e2cd-4345-8015-a6a6d29c9353" width="300" />
+  <img src="https://github.com/user-attachments/assets/0d4b5184-41b6-4dd1-879f-2cf704ee47df" width="300" />
+  <img src="https://github.com/user-attachments/assets/95c01160-9070-4e1d-9d50-11e7471115cc" width="300" />
+  <img src="https://github.com/user-attachments/assets/41e7348e-7b5b-419d-9fc9-567c125773b2" width="300" />
+  <img src="https://github.com/user-attachments/assets/7653abb2-3bb6-4097-bffb-6bb378738f1c" width="300" />
+  <img src="https://github.com/user-attachments/assets/3e09b5c5-ae4a-4278-bc71-8cfd5c21e4c3" width="300" />
+  <img src="https://github.com/user-attachments/assets/4de19ff1-ad23-476d-a715-332152c40091" width="300" />
+  <img src="https://github.com/user-attachments/assets/57291ce0-522f-4761-bb8e-9b84e04d0f43" width="300" />
+  <img src="https://github.com/user-attachments/assets/7e041612-70a5-426f-9243-3ae914602ef5" width="300" />
+  <img src="https://github.com/user-attachments/assets/01fc00cb-ce6b-411f-b1fa-ed896473361c" width="300" />
+</p>
 
 ---
 
@@ -273,14 +269,9 @@ flutter build ios --release
 PDF generation uses `pdf` & `printing` package.
 Share via WhatsApp using system share sheet.
 
-**Example:**
-
 ```dart
 await Share.shareXFiles([pdfFile], text: 'Laundry Summary');
 ```
-
----
-
 
 ---
 
@@ -313,4 +304,3 @@ MIT License © 2025 WashLens AI
 ## ⭐ Support This Project
 
 If you like this project, please **star ⭐ the repository** — it helps more people discover WashLens AI!
-
