@@ -1,4 +1,7 @@
-# 🧺 WashLens AI 📸🧠
+# 🧺 WashLens AI 📸🧠 [<img align="center" alt="Chill gif" src="https://raw.githubusercontent.com/Vishnu-tppr/Vishnu-cse/main/Untitled%20gif%20-%20Made%20with%20Clipchamp.gif" width="100" height="100" />](https://github.com/Vishnu-tppr?tab=repositories)
+
+
+
 
 > 🎯 A next‑gen AI-powered Flutter app that automatically detects, counts, and tracks your laundry.
 >
