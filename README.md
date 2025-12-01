@@ -45,8 +45,10 @@
 ## 📸 Demo Screenshots
 
 *(add your images here)*
+![Screenshot 2025-05-16 224741](<img width="1080" height="2400" alt="Screenshot_20251201_165134" src="https://github.com/user-attachments/assets/92c44ef6-e2cd-4345-8015-a6a6d29c9353" />
+)
 
-```
+
 /screenshots
  ├── splash.png
  ├── home.png
