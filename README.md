@@ -44,17 +44,18 @@
 
 ## 📸 Demo Screenshots
 
-*(add your images here)*
-![Screenshot 2025-05-16 224741](<img width="1080" height="2400" alt="Screenshot_20251201_165134" src="https://github.com/user-attachments/assets/92c44ef6-e2cd-4345-8015-a6a6d29c9353" />
-)
+<img src="https://github.com/user-attachments/assets/92c44ef6-e2cd-4345-8015-a6a6d29c9353" width="300">
+<img src="https://github.com/user-attachments/assets/0d4b5184-41b6-4dd1-879f-2cf704ee47df" width="300">
+<img src="https://github.com/user-attachments/assets/95c01160-9070-4e1d-9d50-11e7471115cc" width="300">
+<img src="https://github.com/user-attachments/assets/41e7348e-7b5b-419d-9fc9-567c125773b2" width="300">
+<img src="https://github.com/user-attachments/assets/7653abb2-3bb6-4097-bffb-6bb378738f1c" width="300">
+<img src="https://github.com/user-attachments/assets/3e09b5c5-ae4a-4278-bc71-8cfd5c21e4c3" width="300">
+<img src="https://github.com/user-attachments/assets/4de19ff1-ad23-476d-a715-332152c40091" width="300">
+<img src="https://github.com/user-attachments/assets/57291ce0-522f-4761-bb8e-9b84e04d0f43" width="300">
+<img src="https://github.com/user-attachments/assets/7e041612-70a5-426f-9243-3ae914602ef5" width="300">
+<img src="https://github.com/user-attachments/assets/01fc00cb-ce6b-411f-b1fa-ed896473361c" width="300">
 
 
-/screenshots
- ├── splash.png
- ├── home.png
- ├── detection.png
- ├── summary.png
- └── history.png
 ```
 
 ---
